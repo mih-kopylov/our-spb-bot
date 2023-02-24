@@ -8,7 +8,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
-func StatusHandlerApi(bot *tgbotapi.BotAPI, message *tgbotapi.Message, states *state.States) error {
+func StatusCommandHandler(bot *tgbotapi.BotAPI, message *tgbotapi.Message, states *state.States) error {
 	userState, err := states.GetState(message.From.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")

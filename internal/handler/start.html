@@ -20,7 +20,6 @@
 
 
 <b>Команды:</b>
-
-* /start - показать это сообщение
-* /send - отправить обращение
-* /status - статус очереди обращений
+{{ range $key, $value := .Commands }}
+* /{{ $key }} - {{ $value.Description}}
+{{ end }}

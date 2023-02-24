@@ -6,6 +6,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/handler"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 )
 
@@ -33,18 +34,15 @@ func startApiBot(conf *config.Config) error {
 	bot.Debug = true
 
 	updateConfig := tgbotapi.NewUpdate(0)
-	updateConfig.Timeout = 10
+	updateConfig.Timeout = 30
 
-	setMyCommandsConfig := tgbotapi.NewSetMyCommands(tgbotapi.BotCommand{
-		Command:     handler.CommandStart,
-		Description: "Показать это сообщение1",
-	}, tgbotapi.BotCommand{
-		Command:     handler.CommandCreateMessage,
-		Description: "Создать новое сообщение",
-	}, tgbotapi.BotCommand{
-		Command:     handler.CommandStatus,
-		Description: "Статус сообщений",
-	})
+	commands := handler.GetCommands()
+	setMyCommandsConfig := tgbotapi.NewSetMyCommands(lo.MapToSlice(commands, func(commandName string, comm handler.CommandConfiguration) tgbotapi.BotCommand {
+		return tgbotapi.BotCommand{
+			Command:     comm.Name,
+			Description: comm.Description,
+		}
+	})...)
 	_, err = bot.Request(setMyCommandsConfig)
 	if err != nil {
 		logrus.Fatal(errorx.EnhanceStackTrace(err, "failed to register bot commands"))
@@ -52,44 +50,48 @@ func startApiBot(conf *config.Config) error {
 
 	updates := bot.GetUpdatesChan(updateConfig)
 	for update := range updates {
+		var stack *errorx.Error
+		var chat *tgbotapi.Chat
+
 		if update.CallbackQuery != nil {
 			err = handler.CallbackHandler(bot, update.CallbackQuery, states)
 			if err != nil {
-				stack := errorx.EnhanceStackTrace(err, "failed to handle callback")
-				logrus.WithField("data", update.CallbackData()).Error(stack)
-				reply := tgbotapi.NewMessage(update.CallbackQuery.Message.Chat.ID, stack.Message())
-				_, err = bot.Send(reply)
-				if err != nil {
-					logrus.WithField("callback", update.CallbackData()).Error(err)
-				}
+				chat = update.CallbackQuery.Message.Chat
+				stack = errorx.EnhanceStackTrace(err, "failed to handle callback")
 			}
 
 		} else if update.Message != nil {
 			message := update.Message
 			command := message.Command()
+			chat = message.Chat
 
-			switch command {
-			case handler.CommandStart:
-				err = handler.StartHandlerApi(bot, message, states)
-			case handler.CommandStatus:
-				err = handler.StatusHandlerApi(bot, message, states)
-			case handler.CommandCreateMessage:
-				err = handler.CreateMessageHandlerApi(bot, message, states)
-			default:
-				err = handler.FillMessageApi(bot, message, states)
-			}
-			if err != nil {
-				stack := errorx.EnhanceStackTrace(err, "failed to handle command")
-				logrus.WithField("command", command).Error(stack)
-				reply := tgbotapi.NewMessage(message.Chat.ID, stack.Message())
-				_, err = bot.Send(reply)
+			if command != "" {
+				commandConfiguration, exists := commands[command]
+				if !exists {
+					stack = errorx.IllegalArgument.New("unsupported command")
+				} else {
+					err = commandConfiguration.Handler(bot, message, states)
+					if err != nil {
+						stack = errorx.EnhanceStackTrace(err, "failed to handle command")
+					}
+				}
+			} else {
+				err = handler.SimpleMessageHandler(bot, message, states)
 				if err != nil {
-					logrus.WithField("command", command).Error(err)
+					stack = errorx.EnhanceStackTrace(err, "failed to handle message")
 				}
 			}
 		} else {
 			logrus.Info("unsupported update type")
-			continue
+		}
+
+		if stack != nil {
+			logrus.Error(stack)
+			reply := tgbotapi.NewMessage(chat.ID, stack.Message())
+			_, err = bot.Send(reply)
+			if err != nil {
+				logrus.Error(err)
+			}
 		}
 
 	}
