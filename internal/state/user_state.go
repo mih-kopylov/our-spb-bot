@@ -63,7 +63,7 @@ func (s *UserState) ResetCurrentCategory() {
 }
 
 type QueueMessage struct {
-	CategoryId string
+	CategoryId int
 	FileUrls   []string
 	Text       string
 	SentAt     time.Time

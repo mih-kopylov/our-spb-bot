@@ -6,6 +6,8 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
+	"golang.org/x/exp/slices"
+	"time"
 )
 
 func SimpleMessageHandler(bot *tgbotapi.BotAPI, message *tgbotapi.Message, states *state.States) error {
@@ -42,19 +44,29 @@ func SimpleMessageHandler(bot *tgbotapi.BotAPI, message *tgbotapi.Message, state
 		}
 	}
 	if message.Location != nil {
+		text := userState.CurrentCategory.Message
+		if userState.OverrideText != "" {
+			text = userState.OverrideText
+		}
+
 		reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
-Сообщение отправлено
+Сообщение добавлено в очередь и будет отправлено при первой возможности.
 
 Пользователь: @%v
 Категория: %v
-Пользовательский текст: %v
+Текст: %v
 Локация: %v %v
 Файлы: %v
-`, message.From.UserName, userState.CurrentCategory.Category.Id, userState.OverrideText,
+`, message.From.UserName, userState.CurrentCategory.Category.Id, text,
 			message.Location.Longitude, message.Location.Latitude, userState.Files))
 		reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 
-		userState.SentCount++
+		userState.Queue = append(userState.Queue, state.QueueMessage{
+			CategoryId: userState.CurrentCategory.Category.Id,
+			FileUrls:   slices.Clone(userState.Files),
+			Text:       text,
+			SentAt:     time.Now(),
+		})
 		userState.Files = []string{}
 		userState.OverrideText = ""
 		userState.ResetCurrentCategory()

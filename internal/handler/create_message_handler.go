@@ -2,10 +2,8 @@ package handler
 
 import (
 	_ "embed"
-	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
@@ -39,52 +37,6 @@ func MessageCommandHandler(bot *tgbotapi.BotAPI, message *tgbotapi.Message, stat
 	return nil
 }
 
-func SendCallback(bot *tgbotapi.BotAPI, callbackQuery *tgbotapi.CallbackQuery, data string, states *state.States) error {
-	userState, err := states.GetState(callbackQuery.Message.Chat.ID)
-	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to get user state")
-	}
-
-	var markup tgbotapi.InlineKeyboardMarkup
-	var replyText string
-	var childFound *category.UserCategoryTreeNode
-	if data == DataBack {
-		if userState.CurrentCategory.Parent == nil {
-			return errorx.AssertionFailed.New("can't go back more than a root")
-		}
-		childFound = userState.CurrentCategory.Parent
-	} else {
-		for _, child := range userState.CurrentCategory.Children {
-			if child.Id == data {
-				childFound = child
-			}
-		}
-	}
-
-	if childFound == nil {
-		replyText = "Не удалось найти выбранную категорию"
-		markup = tgbotapi.NewInlineKeyboardMarkup()
-	} else {
-		userState.CurrentCategory = childFound
-		if childFound.Category == nil {
-			replyText = "Выберите категорию"
-			markup = createCateogoriesReplyMarkup(userState)
-		} else {
-			replyText = fmt.Sprintf(`Выбранная категория: %v
-Отправьте фотографии`, childFound.GetFullName())
-			markup = createCateogoriesReplyMarkup(userState)
-		}
-	}
-
-	reply := tgbotapi.NewEditMessageTextAndMarkup(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, replyText, markup)
-	_, err = bot.Send(reply)
-	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to send reply")
-	}
-
-	return nil
-}
-
 func createCateogoriesReplyMarkup(userState *state.UserState) tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
 
@@ -94,7 +46,7 @@ func createCateogoriesReplyMarkup(userState *state.UserState) tgbotapi.InlineKey
 	}
 
 	for _, child := range userState.CurrentCategory.Children {
-		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(child.Text, SendSection+SectionSeparator+child.Id)))
+		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(child.Name, SendSection+SectionSeparator+child.Id)))
 	}
 
 	return result

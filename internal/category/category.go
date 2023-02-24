@@ -20,7 +20,8 @@ type UserCategory struct {
 
 type UserCategoryTreeNode struct {
 	Id       string
-	Text     string
+	Name     string
+	Message  string
 	Category *UserCategory
 	Children []*UserCategoryTreeNode
 	Parent   *UserCategoryTreeNode
@@ -30,7 +31,7 @@ func (n *UserCategoryTreeNode) GetFullName() string {
 	var names []string
 	node := n
 	for {
-		names = append([]string{node.Text}, names...)
+		names = append([]string{node.Name}, names...)
 		if node.Parent != nil && node.Parent.Parent != nil {
 			node = node.Parent
 		} else {
@@ -58,13 +59,14 @@ func CreateUserCategoryTree() (*UserCategoryTreeNode, error) {
 
 	rootNode := UserCategoryTreeNode{
 		Id:   uuid.NewString(),
-		Text: "Корень",
+		Name: "Корень",
 	}
 
 	for groupName, group := range categories {
 		groupNode := UserCategoryTreeNode{
 			Id:       uuid.NewString(),
-			Text:     groupName,
+			Name:     groupName,
+			Message:  "",
 			Category: nil,
 			Children: []*UserCategoryTreeNode{},
 			Parent:   &rootNode,
@@ -73,7 +75,8 @@ func CreateUserCategoryTree() (*UserCategoryTreeNode, error) {
 		for categoryName, userCategory := range group {
 			categoryNode := UserCategoryTreeNode{
 				Id:       uuid.NewString(),
-				Text:     categoryName,
+				Name:     categoryName,
+				Message:  userCategory.Message,
 				Category: &userCategory,
 				Children: nil,
 				Parent:   &groupNode,
