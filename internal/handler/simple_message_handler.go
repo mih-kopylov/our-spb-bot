@@ -4,6 +4,7 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
 	"golang.org/x/exp/slices"
@@ -131,8 +132,21 @@ func PasswordFormPersonalSimpleMessageHandler(bot *tgbotapi.BotAPI, message *tgb
 	userState.Credentials.Password = message.Text
 	userState.MessageHandlerName = ""
 
-	reply := tgbotapi.NewMessage(message.Chat.ID, "Учётные данные сохранены")
-	_, err := bot.Send(reply)
+	client, err := spb.NewReqClient()
+	if err != nil {
+		return errorx.EnhanceStackTrace(err, "failed to initialize http client")
+	}
+
+	tokenResponse, err := client.Login(userState.Credentials.Login, userState.Credentials.Password)
+	if err != nil {
+		userState.Credentials = nil
+		return errorx.EnhanceStackTrace(err, "failed to login")
+	}
+
+	userState.Token = tokenResponse.AccessToken
+
+	reply := tgbotapi.NewMessage(message.Chat.ID, "Авторизация прошла успешно. Учётные данные сохранены")
+	_, err = bot.Send(reply)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")
 	}

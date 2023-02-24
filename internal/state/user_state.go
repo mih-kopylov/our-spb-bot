@@ -52,6 +52,7 @@ type UserState struct {
 	OverrideText       string
 	Files              []string
 	Credentials        *Credentials
+	Token              string
 	MessageHandlerName string
 }
 
