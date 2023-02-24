@@ -13,7 +13,7 @@ import (
 var startTextTemplate string
 
 func StartCommandHandler(bot *tgbotapi.BotAPI, message *tgbotapi.Message, states *state.States) error {
-	_, err := states.NewStateIfNotExists(message.From.ID)
+	_, err := states.NewStateIfNotExists(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to crate user state")
 	}

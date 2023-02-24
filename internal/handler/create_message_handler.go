@@ -8,18 +8,16 @@ import (
 )
 
 const (
-	StartCommand   = "start"
-	MessageCommand = "message"
-	StatusCommand  = "status"
-	DataBack       = "back"
+	DataBack = "back"
 )
 
 func MessageCommandHandler(bot *tgbotapi.BotAPI, message *tgbotapi.Message, states *state.States) error {
-	userState, err := states.GetState(message.From.ID)
+	userState, err := states.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
+	userState.MessageHandlerName = MessageFormHandlerName
 	userState.ResetCurrentCategory()
 
 	reply := tgbotapi.NewMessage(message.Chat.ID, "")

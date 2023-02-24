@@ -5,6 +5,13 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
+const (
+	StartCommand   = "start"
+	MessageCommand = "message"
+	StatusCommand  = "status"
+	LoginCommand   = "login"
+)
+
 type CommandConfiguration struct {
 	Name        string
 	Description string
@@ -24,6 +31,9 @@ func GetCommands() map[string]CommandConfiguration {
 		Name:        MessageCommand,
 		Description: "Отправить обращение",
 		Handler:     MessageCommandHandler,
+	}, LoginCommand: {
+		Name:        LoginCommand,
+		Description: "Авторизация на портале",
+		Handler:     LoginCommandHandler,
 	}}
-
 }
