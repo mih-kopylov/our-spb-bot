@@ -31,7 +31,7 @@ func SimpleMessageHandler(bot *tgbotapi.BotAPI, message *tgbotapi.Message, state
 		})
 		userState.Files = append(userState.Files, maxPhotoSize.FileID)
 
-		reply := tgbotapi.NewMessage(message.Chat.ID, "Готово к отправке")
+		reply := tgbotapi.NewMessage(message.Chat.ID, "Фото прикреплено")
 		reply.ReplyToMessageID = message.MessageID
 		reply.ReplyMarkup = tgbotapi.NewReplyKeyboard(
 			tgbotapi.NewKeyboardButtonRow(
