@@ -6,7 +6,9 @@ import (
 )
 
 type Config struct {
-	Token string `env:"TELEGRAM_API_TOKEN,required"`
+	Token          string `env:"TELEGRAM_API_TOKEN,required"`
+	OurSpbClientId string `env:"OURSPB_CLIENT_ID,required"`
+	OurSpbSecret   string `env:"OURSPB_SECRET,required"`
 }
 
 func ReadConfig() (*Config, error) {

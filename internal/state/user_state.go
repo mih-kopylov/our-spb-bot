@@ -45,12 +45,20 @@ func NewStates() *States {
 }
 
 type UserState struct {
-	UserId          int64
-	Queue           []QueueMessage
-	SentCount       int
-	CurrentCategory *category.UserCategoryTreeNode
-	OverrideText    string
-	Files           []string
+	UserId             int64
+	Queue              []QueueMessage
+	SentCount          int
+	CurrentCategory    *category.UserCategoryTreeNode
+	OverrideText       string
+	Files              []string
+	Credentials        *Credentials
+	Token              string
+	MessageHandlerName string
+}
+
+type Credentials struct {
+	Login    string
+	Password string
 }
 
 func (s *UserState) ResetCurrentCategory() {
