@@ -2,7 +2,9 @@ package config
 
 import (
 	"github.com/caarlos0/env/v7"
+	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
+	"github.com/samber/lo"
 )
 
 type Config struct {
@@ -11,7 +13,17 @@ type Config struct {
 	OurSpbSecret   string `env:"OURSPB_SECRET,required"`
 }
 
-func ReadConfig() (*Config, error) {
+const (
+	BeanId = "Config"
+)
+
+func RegisterBean() *Config {
+	config := lo.Must(readConfig())
+	_ = lo.Must(di.RegisterBeanInstance(BeanId, &config))
+	return config
+}
+
+func readConfig() (*Config, error) {
 	result := &Config{}
 	err := env.Parse(result)
 	if err != nil {
