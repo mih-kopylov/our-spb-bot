@@ -2,8 +2,10 @@ package category
 
 import (
 	_ "embed"
-	"github.com/google/uuid"
+	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
+	"github.com/lithammer/shortuuid/v4"
+	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 	"strings"
 )
@@ -11,7 +13,16 @@ import (
 //go:embed categories.yaml
 var categoriesText []byte
 
-type UserCategories map[string]map[string]UserCategory
+const (
+	BeanId = "Categories"
+)
+
+func RegisterBean() {
+	tree := lo.Must(createUserCategoryTree())
+	_ = lo.Must(di.RegisterBeanInstance(BeanId, tree))
+}
+
+type userCategories map[string]map[string]UserCategory
 
 type UserCategory struct {
 	Id      int
@@ -41,8 +52,21 @@ func (n *UserCategoryTreeNode) GetFullName() string {
 	return strings.Join(names, " / ")
 }
 
-func getUserCategories() (UserCategories, error) {
-	var result UserCategories
+func (n *UserCategoryTreeNode) FindNodeById(id string) *UserCategoryTreeNode {
+	if n.Id == id {
+		return n
+	}
+	for _, child := range n.Children {
+		result := child.FindNodeById(id)
+		if result != nil {
+			return result
+		}
+	}
+	return nil
+}
+
+func getUserCategories() (userCategories, error) {
+	var result userCategories
 	err := yaml.Unmarshal(categoriesText, &result)
 	if err != nil {
 		return nil, errorx.EnhanceStackTrace(err, "failed to unmarshall user categories file")
@@ -51,20 +75,20 @@ func getUserCategories() (UserCategories, error) {
 	return result, nil
 }
 
-func CreateUserCategoryTree() (*UserCategoryTreeNode, error) {
+func createUserCategoryTree() (*UserCategoryTreeNode, error) {
 	categories, err := getUserCategories()
 	if err != nil {
 		return nil, err
 	}
 
 	rootNode := UserCategoryTreeNode{
-		Id:   uuid.NewString(),
+		Id:   "",
 		Name: "Корень",
 	}
 
 	for groupName, group := range categories {
 		groupNode := UserCategoryTreeNode{
-			Id:       uuid.NewString(),
+			Id:       shortuuid.New(),
 			Name:     groupName,
 			Message:  "",
 			Category: nil,
@@ -73,8 +97,9 @@ func CreateUserCategoryTree() (*UserCategoryTreeNode, error) {
 		}
 		rootNode.Children = append(rootNode.Children, &groupNode)
 		for categoryName, userCategory := range group {
+			userCategory := userCategory
 			categoryNode := UserCategoryTreeNode{
-				Id:       uuid.NewString(),
+				Id:       shortuuid.New(),
 				Name:     categoryName,
 				Message:  userCategory.Message,
 				Category: &userCategory,

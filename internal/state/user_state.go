@@ -1,78 +1,54 @@
 package state
 
 import (
-	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/category"
-	"time"
+	"github.com/goioc/di"
+	"github.com/samber/lo"
 )
 
 type States struct {
-	states map[int64]*UserState
+	states map[int64]UserState
 }
 
-// NewStateIfNotExists Puts a new user into the context. If the user already exists in the context, it's kept,
-func (s *States) NewStateIfNotExists(userId int64) (*UserState, error) {
-	userState, exists := s.states[userId]
+const (
+	BeanId = "States"
+)
 
+func RegisterBean() {
+	states := States{
+		states: map[int64]UserState{},
+	}
+	_ = lo.Must(di.RegisterBeanInstance(BeanId, &states))
+}
+
+// GetState Puts a new user into the context. If the user already exists in the context, it's kept,
+func (s *States) GetState(userId int64) (UserState, error) {
+	userState, exists := s.states[userId]
 	if !exists {
-		tree, err := category.CreateUserCategoryTree()
-		if err != nil {
-			return nil, errorx.EnhanceStackTrace(err, "failed to create user category tree")
-		}
-		userState = &UserState{
-			UserId:          userId,
-			Queue:           []QueueMessage{},
-			CurrentCategory: tree,
+		userState = &memoryUserState{
+			userId: userId,
 		}
 		s.states[userId] = userState
 	}
-
 	return userState, nil
 }
 
-func (s *States) GetState(userId int64) (*UserState, error) {
-	userState, exists := s.states[userId]
-	if !exists {
-		return nil, errorx.AssertionFailed.New("no state found: userId=%v", userId)
-	}
-	return userState, nil
-}
+// todo use abstract Data structure inside, serialized to json
 
-func NewStates() *States {
-	return &States{
-		states: map[int64]*UserState{},
-	}
-}
-
-type UserState struct {
-	UserId             int64
-	Queue              []QueueMessage
-	SentCount          int
-	CurrentCategory    *category.UserCategoryTreeNode
-	OverrideText       string
-	Files              []string
-	Credentials        *Credentials
-	Token              string
-	MessageHandlerName string
-}
-
-type Credentials struct {
-	Login    string
-	Password string
-}
-
-func (s *UserState) ResetCurrentCategory() {
-	for {
-		if s.CurrentCategory.Parent == nil {
-			break
-		}
-		s.CurrentCategory = s.CurrentCategory.Parent
-	}
-}
-
-type QueueMessage struct {
-	CategoryId int
-	FileUrls   []string
-	Text       string
-	SentAt     time.Time
+type UserState interface {
+	GetUserId() int64
+	GetCurrentCategoryNodeId() string
+	SetCurrentCategoryNodeId(value string) error
+	GetMessageText() string
+	SetMessageText(value string) error
+	GetFiles() []string
+	AddFile(value string) error
+	ClearFiles() error
+	GetLogin() string
+	SetLogin(value string) error
+	GetPassword() string
+	SetPassword(value string) error
+	GetToken() string
+	SetToken(value string) error
+	GetMessageHandlerName() string
+	SetMessageHandlerName(value string) error
 }

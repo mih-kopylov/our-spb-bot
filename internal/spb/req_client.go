@@ -1,11 +1,17 @@
 package spb
 
 import (
+	"github.com/goioc/di"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
+	"github.com/samber/lo"
 	"strings"
 	"time"
+)
+
+const (
+	BeanId = "SpbClient"
 )
 
 var (
@@ -18,7 +24,12 @@ type ReqClient struct {
 	secret   string
 }
 
-func NewReqClient() (Client, error) {
+func RegisterBean(conf *config.Config) {
+	client := newReqClient(conf)
+	_ = lo.Must(di.RegisterBeanInstance(BeanId, client))
+}
+
+func newReqClient(conf *config.Config) Client {
 	client := req.C().
 		SetBaseURL("https://gorod.gov.spb.ru/api/v4.0").
 		// this is to pretend to be an official client
@@ -26,29 +37,25 @@ func NewReqClient() (Client, error) {
 		EnableDumpEachRequest().
 		SetTimeout(5 * time.Second)
 
-	conf, err := config.ReadConfig()
-	if err != nil {
-		return nil, errorx.EnhanceStackTrace(err, "failed to read config")
-
-	}
-
 	return &ReqClient{
 		client:   client,
 		clientId: conf.OurSpbClientId,
 		secret:   conf.OurSpbSecret,
-	}, nil
+	}
 }
 
 func (r *ReqClient) Login(login string, password string) (*TokenResponse, error) {
 	var result TokenResponse
 	var responseError ErrorResponse
 	request := r.client.R()
-	request.SetFormData(map[string]string{
-		"username":      login,
-		"password":      password,
-		"grant_type":    "password",
-		"client_id":     r.clientId,
-		"client_secret": r.secret},
+	request.SetFormData(
+		map[string]string{
+			"username":      login,
+			"password":      password,
+			"grant_type":    "password",
+			"client_id":     r.clientId,
+			"client_secret": r.secret,
+		},
 	)
 	request.SetSuccessResult(&result)
 	request.SetErrorResult(&responseError)

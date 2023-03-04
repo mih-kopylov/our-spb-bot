@@ -22,6 +22,6 @@
 
 
 <b>Команды:</b>
-{{ range $key, $value := .Commands }}
-* /{{ $key }} - {{ $value.Description}}
+{{ range $value := .Commands }}
+* /{{ $value.Name }} - {{ $value.Description}}
 {{ end }}
