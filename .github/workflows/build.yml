@@ -47,4 +47,4 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: bot_linux_amd64
-          path: ./dist/bot_linux_amd64_v1/bot
+          path: ./dist/our-spb-bot_linux_amd64_v1/bot
