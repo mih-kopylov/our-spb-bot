@@ -4,7 +4,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
@@ -16,10 +15,9 @@ const (
 )
 
 type PasswordForm struct {
-	states       *state.States      `di.inject:"States"`
-	tgbot        *TgBot             `di.inject:"TgBot"`
-	messageQueue queue.MessageQueue `di.inject:"Queue"`
-	spbClient    spb.Client         `di.inject:"SpbClient"`
+	states    *state.States `di.inject:"States"`
+	tgbot     *TgBot        `di.inject:"TgBot"`
+	spbClient spb.Client    `di.inject:"SpbClient"`
 }
 
 func RegisterPasswordFormBean() {

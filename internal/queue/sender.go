@@ -5,7 +5,6 @@ import (
 	"github.com/goioc/di"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
@@ -16,10 +15,9 @@ import (
 )
 
 type MessageSender struct {
-	states         *state.States                  `di.inject:"States"`
-	queue          MessageQueue                   `di.inject:"Queue"`
-	spbClient      spb.Client                     `di.inject:"SpbClient"`
-	cateogiresTree *category.UserCategoryTreeNode `di.inject:"Categories"`
+	states    *state.States `di.inject:"States"`
+	queue     MessageQueue  `di.inject:"Queue"`
+	spbClient spb.Client    `di.inject:"SpbClient"`
 }
 
 const (
