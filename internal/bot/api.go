@@ -26,15 +26,19 @@ func createApi(conf *config.Config) (*tgbotapi.BotAPI, error) {
 
 	api.Debug = true
 	err = tgbotapi.SetLogger(&LorRusLogger{})
+	if err != nil {
+		return nil, errorx.EnhanceStackTrace(err, "failed to configure bot api logging")
+	}
+
 	return api, nil
 }
 
 type LorRusLogger struct{}
 
 func (l *LorRusLogger) Println(v ...interface{}) {
-	logrus.Infoln(v)
+	logrus.Infoln(v...)
 }
 
 func (l *LorRusLogger) Printf(format string, v ...interface{}) {
-	logrus.Infof(format, v)
+	logrus.Infof(format, v...)
 }

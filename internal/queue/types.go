@@ -32,8 +32,12 @@ type Location struct {
 type FailStatus int
 
 const (
-	MaxTries                     = 5
-	FailStatusNoState FailStatus = iota
+	MaxTries = 5
+)
+
+const (
+	FailStatusNone FailStatus = iota
+	FailStatusNoState
 	FailStatusUnauthorized
 	FailStatusBadRequest
 	FailStatusRequestNotCreated

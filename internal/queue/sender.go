@@ -5,7 +5,6 @@ import (
 	"github.com/goioc/di"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
@@ -16,10 +15,9 @@ import (
 )
 
 type MessageSender struct {
-	states         *state.States                  `di.inject:"States"`
-	queue          MessageQueue                   `di.inject:"Queue"`
-	spbClient      spb.Client                     `di.inject:"SpbClient"`
-	cateogiresTree *category.UserCategoryTreeNode `di.inject:"Categories"`
+	states    *state.States `di.inject:"States"`
+	queue     MessageQueue  `di.inject:"Queue"`
+	spbClient spb.Client    `di.inject:"SpbClient"`
 }
 
 const (
@@ -65,23 +63,7 @@ func (s *MessageSender) Start() error {
 			token := userState.GetToken()
 			if token == "" {
 				logrus.WithField("id", message.Id).Debug("no token found")
-				if userState.GetLogin() != "" {
-					logrus.WithField("id", message.Id).Debug("obtaining a token")
-					tokenResponse, err := s.spbClient.Login(userState.GetLogin(), userState.GetPassword())
-					if err != nil {
-						_ = userState.SetLogin("")
-						_ = userState.SetPassword("")
-						s.returnMessage(message, FailStatusUnauthorized)
-					} else {
-						err := userState.SetToken(tokenResponse.AccessToken)
-						if err != nil {
-							s.returnMessage(message, FailStatusUnauthorized)
-						}
-					}
-				} else {
-					logrus.Error(errorx.IllegalState.New("user not authorized"))
-					s.returnMessage(message, FailStatusUnauthorized)
-				}
+				s.tryReauthorize(userState, message)
 				continue
 			}
 
@@ -128,6 +110,29 @@ func (s *MessageSender) Start() error {
 		}
 	}()
 	return nil
+}
+
+func (s *MessageSender) tryReauthorize(userState state.UserState, message *Message) {
+	if userState.GetLogin() != "" {
+		logrus.WithField("id", message.Id).Debug("obtaining a token")
+		tokenResponse, err := s.spbClient.Login(userState.GetLogin(), userState.GetPassword())
+		if err != nil {
+			_ = userState.SetLogin("")
+			_ = userState.SetPassword("")
+			s.returnMessage(message, FailStatusUnauthorized)
+		} else {
+			logrus.WithField("id", message.Id).Debug("new token obtained")
+			err := userState.SetToken(tokenResponse.AccessToken)
+			if err != nil {
+				s.returnMessage(message, FailStatusUnauthorized)
+			} else {
+				message.FailStatus = FailStatusNone
+			}
+		}
+	} else {
+		logrus.Error(errorx.IllegalState.New("user not authorized"))
+		s.returnMessage(message, FailStatusUnauthorized)
+	}
 }
 
 func (s *MessageSender) returnMessage(message *Message, failStatus FailStatus) {
