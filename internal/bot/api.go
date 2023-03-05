@@ -32,9 +32,9 @@ func createApi(conf *config.Config) (*tgbotapi.BotAPI, error) {
 type LorRusLogger struct{}
 
 func (l *LorRusLogger) Println(v ...interface{}) {
-	logrus.Infoln(v)
+	logrus.Infoln(v...)
 }
 
 func (l *LorRusLogger) Printf(format string, v ...interface{}) {
-	logrus.Infof(format, v)
+	logrus.Infof(format, v...)
 }
