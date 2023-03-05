@@ -63,7 +63,7 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 Введите команду /login, чтобы залогиниться снова`)
 	}
 
-	err = userState.SetLogin(tokenResponse.AccessToken)
+	err = userState.SetToken(tokenResponse.AccessToken)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set token")
 	}
