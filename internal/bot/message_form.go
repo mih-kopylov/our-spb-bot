@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
+	"github.com/lithammer/shortuuid/v4"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
@@ -53,7 +54,13 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 				return a.FileSize > b.FileSize
 			},
 		)
-		err := userState.AddFile(maxPhotoSize.FileID)
+
+		fileUrl, err := f.tgbot.api.GetFileDirectURL(maxPhotoSize.FileID)
+		if err != nil {
+			return errorx.EnhanceStackTrace(err, "failed to get direct file link")
+		}
+
+		err = userState.AddFile(fileUrl)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to add file")
 		}
@@ -76,18 +83,18 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
 
-		err := f.messageQueue.Add(
-			userState.GetUserId(), &queue.Message{
-				CategoryId: categoryTreeNode.Category.Id,
-				FileUrls:   userState.GetFiles(),
-				Text:       userState.GetMessageText(),
-				Location: queue.Location{
-					Longitude: message.Location.Longitude,
-					Latitude:  message.Location.Latitude,
-				},
-				SentAt: time.Now(),
+		err := f.messageQueue.Add(&queue.Message{
+			Id:         shortuuid.New(),
+			UserId:     userState.GetUserId(),
+			CategoryId: categoryTreeNode.Category.Id,
+			FileUrls:   userState.GetFiles(),
+			Text:       userState.GetMessageText(),
+			Location: queue.Location{
+				Longitude: message.Location.Longitude,
+				Latitude:  message.Location.Latitude,
 			},
-		)
+			CreatedAt: time.Now(),
+		})
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to add message to queue")
 		}

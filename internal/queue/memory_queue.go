@@ -3,52 +3,53 @@ package queue
 import (
 	"github.com/goioc/di"
 	"github.com/samber/lo"
+	"time"
 )
 
 const (
-	BeanId = "Queue"
+	MemoryQueueBeanId = "Queue"
 )
 
 type MemoryQueue struct {
-	messages map[int64]*userQueue
+	messages  []*Message
+	sentCount map[int64]int
 }
 
-func RegisterBean() {
-	_ = lo.Must(di.RegisterBeanInstance(BeanId, &MemoryQueue{map[int64]*userQueue{}}))
+func RegisterQueueBean() {
+	_ = lo.Must(di.RegisterBeanInstance(MemoryQueueBeanId, &MemoryQueue{
+		messages:  []*Message{},
+		sentCount: map[int64]int{},
+	}))
 }
 
-func (q *MemoryQueue) getOrCreate(userId int64) *userQueue {
-	queue, exists := q.messages[userId]
-	if !exists {
-		queue = &userQueue{}
-		q.messages[userId] = queue
-	}
-	return queue
-}
-
-func (q *MemoryQueue) Add(userId int64, message *Message) error {
-	queue := q.getOrCreate(userId)
-	queue.messages = append(queue.messages, message)
+func (q *MemoryQueue) Add(message *Message) error {
+	q.messages = append(q.messages, message)
 	return nil
 }
 
-func (q *MemoryQueue) Poll(userId int64) (*Message, error) {
-	queue := q.getOrCreate(userId)
-	if len(queue.messages) == 0 {
+func (q *MemoryQueue) Poll() (*Message, error) {
+	message, index, found := lo.FindIndexOf(q.messages, func(item *Message) bool {
+		return item.Tries == 0 || (item.Retryable && item.Tries <= MaxTries && item.RetryAfter.Before(time.Now()))
+	})
+
+	if !found {
 		return nil, nil
 	}
-	return queue.messages[0], nil
+
+	q.messages = append(q.messages[0:index], q.messages[index+1:]...)
+	return message, nil
 }
 
 func (q *MemoryQueue) SentCount(userId int64) int {
-	return q.getOrCreate(userId).sent
+	return q.sentCount[userId]
+}
+
+func (q *MemoryQueue) IncreaseSent(userId int64) {
+	q.sentCount[userId] = q.sentCount[userId] + 1
 }
 
 func (q *MemoryQueue) WaitingCount(userId int64) int {
-	return len(q.getOrCreate(userId).messages)
-}
-
-type userQueue struct {
-	messages []*Message
-	sent     int
+	return lo.CountBy(q.messages, func(item *Message) bool {
+		return item.UserId == userId
+	})
 }

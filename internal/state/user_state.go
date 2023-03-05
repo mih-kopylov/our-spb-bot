@@ -32,7 +32,7 @@ func (s *States) GetState(userId int64) (UserState, error) {
 	return userState, nil
 }
 
-// todo use abstract Data structure inside, serialized to json
+//todo use abstract Data structure inside, serialized to json
 
 type UserState interface {
 	GetUserId() int64

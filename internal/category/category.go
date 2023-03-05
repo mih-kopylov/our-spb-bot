@@ -25,7 +25,7 @@ func RegisterBean() {
 type userCategories map[string]map[string]UserCategory
 
 type UserCategory struct {
-	Id      int
+	Id      int64
 	Message string
 }
 

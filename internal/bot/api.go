@@ -6,6 +6,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -24,5 +25,16 @@ func createApi(conf *config.Config) (*tgbotapi.BotAPI, error) {
 	}
 
 	api.Debug = true
+	err = tgbotapi.SetLogger(&LorRusLogger{})
 	return api, nil
+}
+
+type LorRusLogger struct{}
+
+func (l *LorRusLogger) Println(v ...interface{}) {
+	logrus.Infoln(v)
+}
+
+func (l *LorRusLogger) Printf(format string, v ...interface{}) {
+	logrus.Infof(format, v)
 }

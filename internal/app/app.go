@@ -11,15 +11,18 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	_ "github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
+	"github.com/sirupsen/logrus"
 )
 
 func RunApplication() error {
+	logrus.SetLevel(logrus.DebugLevel)
 	conf := config.RegisterBean()
 	state.RegisterBean()
 	category.RegisterBean()
 	bot.RegisterApiBean(conf)
 	bot.RegisterBotBean()
-	queue.RegisterBean()
+	queue.RegisterQueueBean()
+	queue.RegisterSenderBean()
 	spb.RegisterBean(conf)
 	lo.Must0(di.InitializeContainer())
 
