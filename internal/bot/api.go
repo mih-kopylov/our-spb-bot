@@ -26,6 +26,10 @@ func createApi(conf *config.Config) (*tgbotapi.BotAPI, error) {
 
 	api.Debug = true
 	err = tgbotapi.SetLogger(&LorRusLogger{})
+	if err != nil {
+		return nil, errorx.EnhanceStackTrace(err, "failed to configure bot api logging")
+	}
+
 	return api, nil
 }
 
