@@ -1,0 +1,9 @@
+version: "3.9"
+
+services:
+  bot:
+    image: "ghcr.io/mih-kopylov/our-spb-bot:1"
+    environment:
+      - TELEGRAM_API_TOKEN=
+      - OURSPB_CLIENT_ID=
+      - OURSPB_SECRET=
