@@ -8,6 +8,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"github.com/mih-kopylov/our-spb-bot/internal/storage"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 )
@@ -15,7 +16,8 @@ import (
 func RunApplication() error {
 	logrus.SetLevel(logrus.DebugLevel)
 	conf := config.RegisterBean()
-	state.RegisterBean(conf)
+	storage.RegisterBean(conf)
+	state.RegisterBean()
 	category.RegisterBean()
 	bot.RegisterApiBean(conf)
 	bot.RegisterBotBean()
