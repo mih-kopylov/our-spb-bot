@@ -15,9 +15,9 @@ const (
 )
 
 type PasswordForm struct {
-	states    *state.States `di.inject:"States"`
-	tgbot     *TgBot        `di.inject:"TgBot"`
-	spbClient spb.Client    `di.inject:"SpbClient"`
+	states    state.States `di.inject:"States"`
+	tgbot     *TgBot       `di.inject:"TgBot"`
+	spbClient spb.Client   `di.inject:"SpbClient"`
 }
 
 func RegisterPasswordFormBean() {
@@ -34,26 +34,16 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 		return f.tgbot.SendMessage(message.Chat, "Введите пароль")
 	}
 
-	err = userState.SetPassword(message.Text)
-	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to set password")
-	}
+	userState.Password = message.Text
+	userState.MessageHandlerName = ""
 
-	err = userState.SetMessageHandlerName("")
+	tokenResponse, err := f.spbClient.Login(userState.Login, userState.Password)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to set message handler")
-	}
-
-	tokenResponse, err := f.spbClient.Login(userState.GetLogin(), userState.GetPassword())
-	if err != nil {
-		err = userState.SetLogin("")
+		userState.Login = ""
+		userState.Password = ""
+		err = f.states.SetState(userState)
 		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to reset login")
-		}
-
-		err = userState.SetPassword("")
-		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to reset password")
+			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 
 		return f.tgbot.SendMessage(message.Chat, `Не удалось авторизоваться.
@@ -61,9 +51,10 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 Введите команду /login, чтобы залогиниться снова`)
 	}
 
-	err = userState.SetToken(tokenResponse.AccessToken)
+	userState.Token = tokenResponse.AccessToken
+	err = f.states.SetState(userState)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to set token")
+		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
 	return f.tgbot.SendMessage(message.Chat, `Авторизация прошла успешно. Учётные данные сохранены.

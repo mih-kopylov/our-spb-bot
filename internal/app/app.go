@@ -15,7 +15,7 @@ import (
 func RunApplication() error {
 	logrus.SetLevel(logrus.DebugLevel)
 	conf := config.RegisterBean()
-	state.RegisterBean()
+	state.RegisterBean(conf)
 	category.RegisterBean()
 	bot.RegisterApiBean(conf)
 	bot.RegisterBotBean()

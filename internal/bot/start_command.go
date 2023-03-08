@@ -18,8 +18,8 @@ const (
 )
 
 type StartCommand struct {
-	states *state.States `di.inject:"States"`
-	tgbot  *TgBot        `di.inject:"TgBot"`
+	states state.States `di.inject:"States"`
+	tgbot  *TgBot       `di.inject:"TgBot"`
 }
 
 func (c *StartCommand) Name() string {

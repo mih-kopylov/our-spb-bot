@@ -19,7 +19,7 @@ const (
 )
 
 type MessageForm struct {
-	states         *state.States                  `di.inject:"States"`
+	states         state.States                   `di.inject:"States"`
 	tgbot          *TgBot                         `di.inject:"TgBot"`
 	messageQueue   queue.MessageQueue             `di.inject:"Queue"`
 	cateogiresTree *category.UserCategoryTreeNode `di.inject:"Categories"`
@@ -36,9 +36,10 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	}
 
 	if message.Text != "" {
-		err := userState.SetMessageText(message.Text)
+		userState.MessageText = message.Text
+		err := f.states.SetState(userState)
 		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to set message text")
+			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 
 		return f.tgbot.SendMessageCustom(
@@ -60,9 +61,10 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return errorx.EnhanceStackTrace(err, "failed to get direct file link")
 		}
 
-		err = userState.AddFile(fileUrl)
+		userState.Files = append(userState.Files, fileUrl)
+		err = f.states.SetState(userState)
 		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to add file")
+			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 
 		return f.tgbot.SendMessageCustom(
@@ -78,17 +80,17 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	}
 
 	if message.Location != nil {
-		categoryTreeNode := f.cateogiresTree.FindNodeById(userState.GetCurrentCategoryNodeId())
+		categoryTreeNode := f.cateogiresTree.FindNodeById(userState.CurrentCategoryNodeId)
 		if categoryTreeNode == nil {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
 
 		err := f.messageQueue.Add(&queue.Message{
 			Id:         shortuuid.New(),
-			UserId:     userState.GetUserId(),
+			UserId:     userState.UserId,
 			CategoryId: categoryTreeNode.Category.Id,
-			FileUrls:   userState.GetFiles(),
-			Text:       userState.GetMessageText(),
+			FileUrls:   userState.Files,
+			Text:       userState.MessageText,
 			Location: queue.Location{
 				Longitude: message.Location.Longitude,
 				Latitude:  message.Location.Latitude,
@@ -108,8 +110,8 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 Текст: %v
 Локация: %v %v
 Файлы: %v
-`, message.Chat.UserName, categoryTreeNode.Category.Id, userState.GetMessageText(),
-			message.Location.Longitude, message.Location.Latitude, userState.GetFiles(),
+`, message.Chat.UserName, categoryTreeNode.Category.Id, userState.MessageText,
+			message.Location.Longitude, message.Location.Latitude, userState.Files,
 		)
 		err = f.tgbot.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
@@ -120,24 +122,14 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return err
 		}
 
-		err = userState.ClearFiles()
-		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to clear files")
-		}
+		userState.Files = nil
+		userState.MessageText = ""
+		userState.CurrentCategoryNodeId = ""
+		userState.MessageHandlerName = ""
 
-		err = userState.SetMessageText("")
+		err = f.states.SetState(userState)
 		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to clear message text")
-		}
-
-		err = userState.SetCurrentCategoryNodeId("")
-		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to reset current category")
-		}
-
-		err = userState.SetMessageHandlerName("")
-		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to clear message handler")
+			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 	}
 

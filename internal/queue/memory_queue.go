@@ -11,14 +11,12 @@ const (
 )
 
 type MemoryQueue struct {
-	messages  []*Message
-	sentCount map[int64]int
+	messages []*Message
 }
 
 func RegisterQueueBean() {
 	_ = lo.Must(di.RegisterBeanInstance(MemoryQueueBeanId, &MemoryQueue{
-		messages:  []*Message{},
-		sentCount: map[int64]int{},
+		messages: []*Message{},
 	}))
 }
 
@@ -38,14 +36,6 @@ func (q *MemoryQueue) Poll() (*Message, error) {
 
 	q.messages = append(q.messages[0:index], q.messages[index+1:]...)
 	return message, nil
-}
-
-func (q *MemoryQueue) SentCount(userId int64) int {
-	return q.sentCount[userId]
-}
-
-func (q *MemoryQueue) IncreaseSent(userId int64) {
-	q.sentCount[userId] = q.sentCount[userId] + 1
 }
 
 func (q *MemoryQueue) WaitingCount(userId int64) int {

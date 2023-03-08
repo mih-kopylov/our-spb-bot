@@ -15,9 +15,9 @@ import (
 )
 
 type MessageSender struct {
-	states    *state.States `di.inject:"States"`
-	queue     MessageQueue  `di.inject:"Queue"`
-	spbClient spb.Client    `di.inject:"SpbClient"`
+	states    state.States `di.inject:"States"`
+	queue     MessageQueue `di.inject:"Queue"`
+	spbClient spb.Client   `di.inject:"SpbClient"`
 }
 
 const (
@@ -60,8 +60,7 @@ func (s *MessageSender) Start() error {
 				continue
 			}
 
-			token := userState.GetToken()
-			if token == "" {
+			if userState.Token == "" {
 				logrus.WithField("id", message.Id).Debug("no token found")
 				s.tryReauthorize(userState, message)
 				continue
@@ -84,7 +83,7 @@ func (s *MessageSender) Start() error {
 			}
 
 			logrus.WithField("id", message.Id).Debug("sending message")
-			err = s.spbClient.Send(token, request, files)
+			err = s.spbClient.Send(userState.Token, request, files)
 			if err != nil {
 				if errorx.IsOfType(err, spb.ErrUnauthorized) {
 					logrus.Warn(err)
@@ -104,7 +103,11 @@ func (s *MessageSender) Start() error {
 				}
 				continue
 			}
-			s.queue.IncreaseSent(message.UserId)
+			userState.SentMessagesCount++
+			err = s.states.SetState(userState)
+			if err != nil {
+				logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
+			}
 
 			logrus.WithField("id", message.Id).Debug("message sent")
 		}
@@ -112,18 +115,24 @@ func (s *MessageSender) Start() error {
 	return nil
 }
 
-func (s *MessageSender) tryReauthorize(userState state.UserState, message *Message) {
-	if userState.GetLogin() != "" {
+func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message) {
+	if userState.Login != "" {
 		logrus.WithField("id", message.Id).Debug("obtaining a token")
-		tokenResponse, err := s.spbClient.Login(userState.GetLogin(), userState.GetPassword())
+		tokenResponse, err := s.spbClient.Login(userState.Login, userState.Password)
 		if err != nil {
-			_ = userState.SetLogin("")
-			_ = userState.SetPassword("")
+			userState.Login = ""
+			userState.Password = ""
+			err := s.states.SetState(userState)
+			if err != nil {
+				logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
+			}
 			s.returnMessage(message, FailStatusUnauthorized)
 		} else {
 			logrus.WithField("id", message.Id).Debug("new token obtained")
-			err := userState.SetToken(tokenResponse.AccessToken)
+			userState.Token = tokenResponse.AccessToken
+			err := s.states.SetState(userState)
 			if err != nil {
+				logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
 				s.returnMessage(message, FailStatusUnauthorized)
 			} else {
 				message.FailStatus = FailStatusNone
@@ -137,6 +146,7 @@ func (s *MessageSender) tryReauthorize(userState state.UserState, message *Messa
 
 func (s *MessageSender) returnMessage(message *Message, failStatus FailStatus) {
 	message.Tries++
+	message.LastTriedAt = time.Now()
 	message.FailStatus = failStatus
 	spbLocation := time.FixedZone("UTC+3", 3*60*60)
 	if failStatus == FailStatusUnauthorized {

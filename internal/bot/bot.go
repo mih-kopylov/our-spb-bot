@@ -13,7 +13,7 @@ import (
 
 type TgBot struct {
 	api    *tgbotapi.BotAPI `di.inject:"TgApi"`
-	states *state.States    `di.inject:"States"`
+	states state.States     `di.inject:"States"`
 }
 
 const (
@@ -142,8 +142,7 @@ func (b *TgBot) handleMessage(message *tgbotapi.Message) error {
 			return errorx.EnhanceStackTrace(err, "failed to get user state")
 		}
 
-		messageHandlerName := userState.GetMessageHandlerName()
-		formInstance, err := di.GetInstanceSafe(messageHandlerName)
+		formInstance, err := di.GetInstanceSafe(userState.MessageHandlerName)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "no message handler is waiting for a message")
 		}
