@@ -11,19 +11,20 @@ type MessageQueue interface {
 }
 
 type Message struct {
-	Id          string     `firestore:"id"`
-	UserId      int64      `firestore:"userId"`
-	CategoryId  int64      `firestore:"categoryId"`
-	FileUrls    []string   `firestore:"fileUrls"`
-	Text        string     `firestore:"text"`
-	Longitude   float64    `firestore:"longitude"`
-	Latitude    float64    `firestore:"latitude"`
-	CreatedAt   time.Time  `firestore:"createdAt"`
-	LastTriedAt time.Time  `firestore:"lastTriedAt"`
-	Tries       int        `firestore:"tries"`
-	Retryable   bool       `firestore:"retryable"`
-	RetryAfter  time.Time  `firestore:"retryAfter"`
-	FailStatus  FailStatus `firestore:"failStatus"`
+	Id              string     `firestore:"id"`
+	UserId          int64      `firestore:"userId"`
+	CategoryId      int64      `firestore:"categoryId"`
+	FileUrls        []string   `firestore:"fileUrls"`
+	Text            string     `firestore:"text"`
+	Longitude       float64    `firestore:"longitude"`
+	Latitude        float64    `firestore:"latitude"`
+	CreatedAt       time.Time  `firestore:"createdAt"`
+	LastTriedAt     time.Time  `firestore:"lastTriedAt"`
+	Tries           int        `firestore:"tries"`
+	Retryable       bool       `firestore:"retryable"`
+	RetryAfter      time.Time  `firestore:"retryAfter"`
+	FailStatus      FailStatus `firestore:"failStatus"`
+	FailDescription string     `firestore:"failDescription"`
 }
 
 type FailStatus int

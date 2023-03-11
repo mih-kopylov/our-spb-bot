@@ -101,6 +101,7 @@ func (s *MessageSender) Start() error {
 				}
 				if errorx.IsOfType(err, spb.ErrBadRequest) {
 					logrus.Error(errorx.EnhanceStackTrace(err, "failed to send message"))
+					message.FailDescription = err.Error()
 					s.returnMessage(message, FailStatusBadRequest)
 				}
 				if errorx.IsOfType(err, spb.ErrTooManyRequests) {

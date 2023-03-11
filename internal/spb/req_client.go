@@ -106,7 +106,7 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 		if response.StatusCode == http.StatusUnauthorized {
 			return ErrUnauthorized.Wrap(err, "token expired")
 		}
-		return ErrBadRequest.New("failed to send a message: error=%v", response.StatusCode)
+		return ErrBadRequest.New("failed to send a message: error=%v, message=%v", response.StatusCode, errorResponse.String())
 	}
 
 	return nil
