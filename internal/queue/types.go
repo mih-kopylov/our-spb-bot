@@ -1,32 +1,29 @@
 package queue
 
-import "time"
+import (
+	"time"
+)
 
 type MessageQueue interface {
 	Add(message *Message) error
 	Poll() (*Message, error)
-	SentCount(userId int64) int
-	IncreaseSent(userId int64)
-	WaitingCount(userId int64) int
+	WaitingCount(userId int64) (int, error)
 }
 
 type Message struct {
-	Id         string
-	UserId     int64
-	CategoryId int64
-	FileUrls   []string
-	Text       string
-	Location   Location
-	CreatedAt  time.Time
-	Tries      int
-	Retryable  bool
-	RetryAfter time.Time
-	FailStatus FailStatus
-}
-
-type Location struct {
-	Longitude float64
-	Latitude  float64
+	Id          string     `firestore:"id"`
+	UserId      int64      `firestore:"userId"`
+	CategoryId  int64      `firestore:"categoryId"`
+	FileUrls    []string   `firestore:"fileUrls"`
+	Text        string     `firestore:"text"`
+	Longitude   float64    `firestore:"longitude"`
+	Latitude    float64    `firestore:"latitude"`
+	CreatedAt   time.Time  `firestore:"createdAt"`
+	LastTriedAt time.Time  `firestore:"lastTriedAt"`
+	Tries       int        `firestore:"tries"`
+	Retryable   bool       `firestore:"retryable"`
+	RetryAfter  time.Time  `firestore:"retryAfter"`
+	FailStatus  FailStatus `firestore:"failStatus"`
 }
 
 type FailStatus int
@@ -38,6 +35,7 @@ const (
 const (
 	FailStatusNone FailStatus = iota
 	FailStatusNoState
+	FailStatusTokenExpired
 	FailStatusUnauthorized
 	FailStatusBadRequest
 	FailStatusRequestNotCreated

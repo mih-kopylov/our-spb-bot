@@ -9,6 +9,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/exp/slices"
+	"net/http"
 	"strings"
 	"time"
 )
@@ -101,6 +102,9 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 		r.printDebugDump(response)
 		if slices.Contains(errorResponse.NonFieldErrors, "Выберите не дом.") {
 			return ErrExpectingNotBuildingCoords.New("failed to send a message, expecting not a building coordinates")
+		}
+		if response.StatusCode == http.StatusUnauthorized {
+			return ErrUnauthorized.Wrap(err, "token expired")
 		}
 		return ErrBadRequest.New("failed to send a message: error=%v", response.StatusCode)
 	}

@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Token          string `env:"TELEGRAM_API_TOKEN,required"`
-	OurSpbClientId string `env:"OURSPB_CLIENT_ID,required"`
-	OurSpbSecret   string `env:"OURSPB_SECRET,required"`
+	Token                  string `env:"TELEGRAM_API_TOKEN,required"`
+	OurSpbClientId         string `env:"OURSPB_CLIENT_ID,required"`
+	OurSpbSecret           string `env:"OURSPB_SECRET,required"`
+	FirebaseServiceAccount string `env:"FIREBASE_SERVICE_ACCOUNT,required"`
 }
 
 const (

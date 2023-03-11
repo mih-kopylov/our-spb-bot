@@ -14,7 +14,7 @@ const (
 )
 
 type StatusCommand struct {
-	states       *state.States      `di.inject:"States"`
+	states       state.States       `di.inject:"States"`
 	tgbot        *TgBot             `di.inject:"TgBot"`
 	messageQueue queue.MessageQueue `di.inject:"Queue"`
 }
@@ -33,14 +33,19 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
+	waitingCount, err := c.messageQueue.WaitingCount(userState.UserId)
+	if err != nil {
+		return errorx.EnhanceStackTrace(err, "failed to count messages in the queue")
+	}
+
 	reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
 Пользователь: @%v
 Сообщений отправлено: %v
 Сообщений в очереди: %v
 `,
 		message.Chat.UserName,
-		c.messageQueue.SentCount(userState.GetUserId()),
-		c.messageQueue.WaitingCount(userState.GetUserId())))
+		userState.SentMessagesCount,
+		waitingCount))
 	_, err = c.tgbot.api.Send(reply)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")

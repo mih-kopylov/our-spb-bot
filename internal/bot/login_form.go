@@ -14,8 +14,8 @@ const (
 )
 
 type LoginForm struct {
-	states *state.States `di.inject:"States"`
-	tgbot  *TgBot        `di.inject:"TgBot"`
+	states state.States `di.inject:"States"`
+	tgbot  *TgBot       `di.inject:"TgBot"`
 }
 
 func RegisterLoginFormBean() {
@@ -32,14 +32,11 @@ func (f *LoginForm) Handle(message *tgbotapi.Message) error {
 		return f.tgbot.SendMessage(message.Chat, "Введите логин")
 	}
 
-	err = userState.SetLogin(message.Text)
+	userState.Login = message.Text
+	userState.MessageHandlerName = PasswordFormBeanId
+	err = f.states.SetState(userState)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to set login")
-	}
-
-	err = userState.SetMessageHandlerName(PasswordFormBeanId)
-	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to set message handler")
+		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
 	return f.tgbot.SendMessage(message.Chat, "Введите пароль")
