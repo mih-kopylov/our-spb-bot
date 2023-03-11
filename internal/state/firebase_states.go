@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	BeanId = "States"
+	BeanId     = "States"
+	collection = "states"
 )
 
 type FirebaseStates struct {
@@ -25,7 +26,7 @@ func RegisterBean() {
 }
 
 func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
-	doc := f.fc.Collection("states").Doc(strconv.FormatInt(userId, 10))
+	doc := f.fc.Collection(collection).Doc(strconv.FormatInt(userId, 10))
 	snapshot, err := doc.Get(context.Background())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -51,7 +52,7 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 }
 
 func (f *FirebaseStates) SetState(state *UserState) error {
-	_, err := f.fc.Collection("states").Doc(strconv.FormatInt(state.UserId, 10)).Set(context.Background(), state)
+	_, err := f.fc.Collection(collection).Doc(strconv.FormatInt(state.UserId, 10)).Set(context.Background(), state)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state: userId=%v", state.UserId)
 	}

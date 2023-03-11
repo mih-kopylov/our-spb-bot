@@ -91,11 +91,9 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			CategoryId: categoryTreeNode.Category.Id,
 			FileUrls:   userState.Files,
 			Text:       userState.MessageText,
-			Location: queue.Location{
-				Longitude: message.Location.Longitude,
-				Latitude:  message.Location.Latitude,
-			},
-			CreatedAt: time.Now(),
+			Longitude:  message.Location.Longitude,
+			Latitude:   message.Location.Latitude,
+			CreatedAt:  time.Now(),
 		})
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to add message to queue")

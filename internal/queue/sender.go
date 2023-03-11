@@ -67,7 +67,7 @@ func (s *MessageSender) Start() error {
 			}
 
 			logrus.WithField("id", message.Id).Debug("creating a request")
-			request, err := s.spbClient.CreateSendProblemRequest(message.CategoryId, message.Text, message.Location.Latitude, message.Location.Longitude)
+			request, err := s.spbClient.CreateSendProblemRequest(message.CategoryId, message.Text, message.Latitude, message.Longitude)
 			if err != nil {
 				logrus.Error(errorx.EnhanceStackTrace(err, "failed to create a request"))
 				s.returnMessage(message, FailStatusRequestNotCreated)
@@ -87,7 +87,13 @@ func (s *MessageSender) Start() error {
 			if err != nil {
 				if errorx.IsOfType(err, spb.ErrUnauthorized) {
 					logrus.Warn(err)
-					s.returnMessage(message, FailStatusUnauthorized)
+					userState.Token = ""
+					err = s.states.SetState(userState)
+					if err != nil {
+						logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
+					}
+
+					s.returnMessage(message, FailStatusTokenExpired)
 				}
 				if errorx.IsOfType(err, spb.ErrExpectingNotBuildingCoords) {
 					logrus.Warn(err)
@@ -149,11 +155,11 @@ func (s *MessageSender) returnMessage(message *Message, failStatus FailStatus) {
 	message.LastTriedAt = time.Now()
 	message.FailStatus = failStatus
 	spbLocation := time.FixedZone("UTC+3", 3*60*60)
-	if failStatus == FailStatusUnauthorized {
+	if failStatus == FailStatusTokenExpired {
 		message.Retryable = true
 		message.RetryAfter = time.Now()
 	}
-	if failStatus == FailStatusTooManyRequests || failStatus == FailStatusUnauthorized {
+	if failStatus == FailStatusTooManyRequests {
 		message.Retryable = true
 		year, month, day := time.Now().AddDate(0, 0, 1).Date()
 		message.RetryAfter = time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
@@ -161,7 +167,7 @@ func (s *MessageSender) returnMessage(message *Message, failStatus FailStatus) {
 	if failStatus == FailStatusExpectingNotBuildingCoords {
 		message.Retryable = true
 		message.RetryAfter = time.Now()
-		message.Location.Longitude = s.shiftLongitudeMeters(message.Location.Latitude, message.Location.Longitude, -50)
+		message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
 	}
 	err := s.queue.Add(message)
 	if err != nil {
