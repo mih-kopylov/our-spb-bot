@@ -8,7 +8,6 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/exp/slices"
 	"net/http"
 	"strings"
 	"time"
@@ -100,10 +99,10 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 
 	if response.IsErrorState() || !response.IsSuccessState() {
 		r.printDebugDump(response)
-		if slices.Contains(errorResponse.NonFieldErrors, "Выберите не дом.") {
+		if strings.Contains(errorResponse.String(), "Выберите не дом.") {
 			return ErrExpectingNotBuildingCoords.New("failed to send a message, expecting not a building coordinates")
 		}
-		if slices.Contains(errorResponse.NonFieldErrors, "Вы отправили 10 сообщений за сутки.") {
+		if strings.Contains(errorResponse.String(), "Вы отправили 10 сообщений за сутки.") {
 			return ErrTooManyRequests.Wrap(err, "too many requests")
 		}
 		if response.StatusCode == http.StatusUnauthorized {
