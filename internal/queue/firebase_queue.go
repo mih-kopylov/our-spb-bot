@@ -5,7 +5,6 @@ import (
 	"context"
 	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
 	"reflect"
 	"time"
@@ -17,8 +16,7 @@ const (
 )
 
 type FirebaseQueue struct {
-	states state.States      `di.inject:"States"`
-	fc     *firestore.Client `di.inject:"Storage"`
+	fc *firestore.Client `di.inject:"Storage"`
 }
 
 func RegisterQueueBean() {
