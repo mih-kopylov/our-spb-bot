@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2023-03-11
+
 ### Fixed
 
 - Keep message retryable when too many requests a day is sent
