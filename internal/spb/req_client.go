@@ -103,6 +103,9 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 		if slices.Contains(errorResponse.NonFieldErrors, "Выберите не дом.") {
 			return ErrExpectingNotBuildingCoords.New("failed to send a message, expecting not a building coordinates")
 		}
+		if slices.Contains(errorResponse.NonFieldErrors, "Вы отправили 10 сообщений за сутки.") {
+			return ErrTooManyRequests.Wrap(err, "too many requests")
+		}
 		if response.StatusCode == http.StatusUnauthorized {
 			return ErrUnauthorized.Wrap(err, "token expired")
 		}
