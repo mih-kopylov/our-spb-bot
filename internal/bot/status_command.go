@@ -33,7 +33,7 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
-	waitingCount, err := c.messageQueue.WaitingCount(userState.UserId)
+	messagesCount, err := c.messageQueue.UserMessagesCount(userState.UserId)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to count messages in the queue")
 	}
@@ -41,11 +41,15 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 	reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
 Пользователь: @%v
 Сообщений отправлено: %v
-Сообщений в очереди: %v
+Ожидает отправки: %v
+Не удалось отправить: %v
+Ожидают авторизации: %v
 `,
 		message.Chat.UserName,
 		userState.SentMessagesCount,
-		waitingCount))
+		messagesCount[queue.StatusCreated],
+		messagesCount[queue.StatusFailed],
+		messagesCount[queue.StatusAwaitingAuthorization]))
 	_, err = c.tgbot.api.Send(reply)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")

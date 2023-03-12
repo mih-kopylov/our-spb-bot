@@ -94,6 +94,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			Longitude:  message.Location.Longitude,
 			Latitude:   message.Location.Latitude,
 			CreatedAt:  time.Now(),
+			Status:     queue.StatusCreated,
 		})
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to add message to queue")

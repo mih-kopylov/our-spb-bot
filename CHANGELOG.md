@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Keep only 3 statuses: `created`, `failed`, `awaiting_authorization`
+- Show the statuses info in `/status` command
+- Reduce number of readings from database to avoid hitting free rate limit
+
 ## [0.5.0] - 2023-03-12
 
 ### Added

@@ -24,6 +24,10 @@ const (
 	SenderBeanId = "Sender"
 )
 
+var (
+	spbLocation = time.FixedZone("UTC+3", 3*60*60)
+)
+
 func RegisterSenderBean() {
 	_ = lo.Must(di.RegisterBean(SenderBeanId, reflect.TypeOf((*MessageSender)(nil))))
 
@@ -48,7 +52,7 @@ func (s *MessageSender) Start() error {
 			}
 			if message == nil {
 				logrus.Debug("no messages found, sleeping")
-				time.Sleep(10 * time.Second)
+				time.Sleep(10 * time.Minute)
 				continue
 			}
 
@@ -56,21 +60,24 @@ func (s *MessageSender) Start() error {
 			userState, err := s.states.GetState(message.UserId)
 			if err != nil {
 				logrus.Error(errorx.EnhanceStackTrace(err, "failed to get user state"))
-				s.returnMessage(message, FailStatusNoState)
+				s.returnMessage(message, StatusFailed, "failed to get user state")
 				continue
 			}
 
 			if userState.Token == "" {
 				logrus.WithField("id", message.Id).Debug("no token found")
-				s.tryReauthorize(userState, message)
-				continue
+				err = s.tryReauthorize(userState, message)
+				if err != nil {
+					logrus.WithField("id", message.Id).Error(err)
+					continue
+				}
 			}
 
 			logrus.WithField("id", message.Id).Debug("creating a request")
 			request, err := s.spbClient.CreateSendProblemRequest(message.CategoryId, message.Text, message.Latitude, message.Longitude)
 			if err != nil {
 				logrus.Error(errorx.EnhanceStackTrace(err, "failed to create a request"))
-				s.returnMessage(message, FailStatusRequestNotCreated)
+				s.returnMessage(message, StatusFailed, "failed to create a request")
 				continue
 			}
 
@@ -78,38 +85,41 @@ func (s *MessageSender) Start() error {
 			files, err := s.getFiles(message)
 			if err != nil {
 				logrus.Error(errorx.EnhanceStackTrace(err, "failed to get message files"))
-				s.returnMessage(message, FailStatusRequestNotCreated)
+				s.returnMessage(message, StatusFailed, "failed to get messages files")
 				continue
 			}
 
 			logrus.WithField("id", message.Id).Debug("sending message")
 			err = s.spbClient.Send(userState.Token, request, files)
 			if err != nil {
+				logrus.WithField("id", message.Id).Warn(errorx.EnhanceStackTrace(err, "failed to send message"))
 				if errorx.IsOfType(err, spb.ErrUnauthorized) {
-					logrus.Warn(err)
 					userState.Token = ""
 					err = s.states.SetState(userState)
 					if err != nil {
 						logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
+						s.returnMessage(message, StatusFailed, "failed to set user state")
 					}
 
-					s.returnMessage(message, FailStatusTokenExpired)
+					message.RetryAfter = time.Now()
+					s.returnMessage(message, StatusCreated, "token expired")
 				}
 				if errorx.IsOfType(err, spb.ErrExpectingNotBuildingCoords) {
-					logrus.Warn(err)
-					s.returnMessage(message, FailStatusExpectingNotBuildingCoords)
+					message.RetryAfter = time.Now()
+					message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
+					s.returnMessage(message, StatusCreated, "service expects not building coordinates")
 				}
 				if errorx.IsOfType(err, spb.ErrBadRequest) {
-					logrus.Error(errorx.EnhanceStackTrace(err, "failed to send message"))
-					message.FailDescription = err.Error()
-					s.returnMessage(message, FailStatusBadRequest)
+					s.returnMessage(message, StatusFailed, err.Error())
 				}
 				if errorx.IsOfType(err, spb.ErrTooManyRequests) {
-					logrus.Info(errorx.EnhanceStackTrace(err, "too many messages sent, will try later"))
-					s.returnMessage(message, FailStatusTooManyRequests)
+					year, month, day := time.Now().AddDate(0, 0, 1).Date()
+					message.RetryAfter = time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
+					s.returnMessage(message, StatusCreated, "too many requests")
 				}
 				continue
 			}
+
 			userState.SentMessagesCount++
 			err = s.states.SetState(userState)
 			if err != nil {
@@ -122,54 +132,47 @@ func (s *MessageSender) Start() error {
 	return nil
 }
 
-func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message) {
-	if userState.Login != "" {
-		logrus.WithField("id", message.Id).Debug("obtaining a token")
-		tokenResponse, err := s.spbClient.Login(userState.Login, userState.Password)
-		if err != nil {
-			userState.Login = ""
-			userState.Password = ""
-			err := s.states.SetState(userState)
-			if err != nil {
-				logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
-			}
-			s.returnMessage(message, FailStatusUnauthorized)
-		} else {
-			logrus.WithField("id", message.Id).Debug("new token obtained")
-			userState.Token = tokenResponse.AccessToken
-			err := s.states.SetState(userState)
-			if err != nil {
-				logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
-				s.returnMessage(message, FailStatusUnauthorized)
-			} else {
-				message.FailStatus = FailStatusNone
-			}
-		}
-	} else {
-		logrus.Error(errorx.IllegalState.New("user not authorized"))
-		s.returnMessage(message, FailStatusUnauthorized)
+func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message) error {
+	if userState.Login == "" {
+		s.returnMessage(message, StatusAwaitingAuthorization, "user not authorized")
+		return errorx.IllegalState.New("user not authorized")
 	}
+
+	logrus.WithField("id", message.Id).Info("refreshing token")
+	tokenResponse, err := s.spbClient.Login(userState.Login, userState.Password)
+	if err != nil {
+		userState.Login = ""
+		userState.Password = ""
+		err2 := s.states.SetState(userState)
+		if err2 != nil {
+			s.returnMessage(message, StatusFailed, "failed to set user state")
+			return errorx.EnhanceStackTrace(err2, "failed to set user state")
+		}
+
+		s.returnMessage(message, StatusAwaitingAuthorization, "failed to reauthorize")
+		return errorx.EnhanceStackTrace(err, "failed to reauthorize")
+	}
+
+	logrus.WithField("id", message.Id).Info("new token obtained")
+	userState.Token = tokenResponse.AccessToken
+	err = s.states.SetState(userState)
+	if err != nil {
+		s.returnMessage(message, StatusFailed, "failed to set user state")
+		return errorx.EnhanceStackTrace(err, "failed to set user state")
+	}
+
+	return nil
 }
 
-func (s *MessageSender) returnMessage(message *Message, failStatus FailStatus) {
+func (s *MessageSender) returnMessage(message *Message, status Status, description string) {
 	message.Tries++
+	if message.Tries >= MaxTries {
+		message.Status = StatusFailed
+	} else {
+		message.Status = status
+	}
 	message.LastTriedAt = time.Now()
-	message.FailStatus = failStatus
-	spbLocation := time.FixedZone("UTC+3", 3*60*60)
-	if failStatus == FailStatusTokenExpired {
-		message.Retryable = true
-		message.RetryAfter = time.Now()
-	}
-	if failStatus == FailStatusTooManyRequests {
-		message.Retryable = true
-		year, month, day := time.Now().AddDate(0, 0, 1).Date()
-		message.RetryAfter = time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
-	}
-	if failStatus == FailStatusExpectingNotBuildingCoords {
-		message.Retryable = true
-		message.RetryAfter = time.Now()
-		message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
-	}
+	message.FailDescription = description
 	err := s.queue.Add(message)
 	if err != nil {
 		logrus.Error(errorx.IllegalState.New("failed to return a failed message back to queue"))
