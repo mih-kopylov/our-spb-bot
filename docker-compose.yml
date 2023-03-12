@@ -1,9 +1,14 @@
 version: "3.9"
 
+# restarting script
+# * * * * * cd /root && docker compose pull && docker ps | grep "ghcr" || docker compose up -d
+
 services:
   bot:
     image: "ghcr.io/mih-kopylov/our-spb-bot:1"
     container_name: bot
+    restart: unless-stopped
+    pull_policy: always
     environment:
       - TELEGRAM_API_TOKEN=
       - OURSPB_CLIENT_ID=
