@@ -44,6 +44,8 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 Ожидает отправки: %v
 Не удалось отправить: %v
 Ожидают авторизации: %v
+
+/message - отправить новое обращение 
 `,
 		message.Chat.UserName,
 		userState.SentMessagesCount,

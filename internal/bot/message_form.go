@@ -109,6 +109,8 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 Текст: %v
 Локация: %v %v
 Файлы: %v
+
+/message - отправить новое обращение 
 `, message.Chat.UserName, categoryTreeNode.Category.Id, userState.MessageText,
 			message.Location.Longitude, message.Location.Latitude, userState.Files,
 		)
