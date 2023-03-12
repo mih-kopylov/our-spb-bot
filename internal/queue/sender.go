@@ -48,6 +48,7 @@ func (s *MessageSender) Start() error {
 			message, err := s.queue.Poll()
 			if err != nil {
 				logrus.Error(errorx.EnhanceStackTrace(err, "failed to poll next message"))
+				time.Sleep(10 * time.Minute)
 				continue
 			}
 			if message == nil {
