@@ -93,30 +93,7 @@ func (s *MessageSender) Start() error {
 			err = s.spbClient.Send(userState.Token, request, files)
 			if err != nil {
 				logrus.WithField("id", message.Id).Warn(errorx.EnhanceStackTrace(err, "failed to send message"))
-				if errorx.IsOfType(err, spb.ErrUnauthorized) {
-					userState.Token = ""
-					err = s.states.SetState(userState)
-					if err != nil {
-						logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
-						s.returnMessage(message, StatusFailed, "failed to set user state")
-					}
-
-					message.RetryAfter = time.Now()
-					s.returnMessage(message, StatusCreated, "token expired")
-				}
-				if errorx.IsOfType(err, spb.ErrExpectingNotBuildingCoords) {
-					message.RetryAfter = time.Now()
-					message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
-					s.returnMessage(message, StatusCreated, "service expects not building coordinates")
-				}
-				if errorx.IsOfType(err, spb.ErrBadRequest) {
-					s.returnMessage(message, StatusFailed, err.Error())
-				}
-				if errorx.IsOfType(err, spb.ErrTooManyRequests) {
-					year, month, day := time.Now().AddDate(0, 0, 1).Date()
-					message.RetryAfter = time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
-					s.returnMessage(message, StatusCreated, "too many requests")
-				}
+				s.handleMessageSendingError(err, userState, message)
 				continue
 			}
 
@@ -130,6 +107,33 @@ func (s *MessageSender) Start() error {
 		}
 	}()
 	return nil
+}
+
+func (s *MessageSender) handleMessageSendingError(err error, userState *state.UserState, message *Message) {
+	if errorx.IsOfType(err, spb.ErrUnauthorized) {
+		userState.Token = ""
+		err = s.states.SetState(userState)
+		if err != nil {
+			logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
+			s.returnMessage(message, StatusFailed, "failed to set user state")
+		} else {
+			message.RetryAfter = time.Now()
+			s.returnMessage(message, StatusCreated, "token expired")
+		}
+	}
+	if errorx.IsOfType(err, spb.ErrExpectingNotBuildingCoords) {
+		message.RetryAfter = time.Now()
+		message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
+		s.returnMessage(message, StatusCreated, "service expects not building coordinates")
+	}
+	if errorx.IsOfType(err, spb.ErrBadRequest) {
+		s.returnMessage(message, StatusFailed, err.Error())
+	}
+	if errorx.IsOfType(err, spb.ErrTooManyRequests) {
+		year, month, day := time.Now().AddDate(0, 0, 1).Date()
+		message.RetryAfter = time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
+		s.returnMessage(message, StatusCreated, "too many requests")
+	}
 }
 
 func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message) error {
