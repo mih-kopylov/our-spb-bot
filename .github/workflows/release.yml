@@ -8,3 +8,5 @@ on:
 jobs:
   create-release:
     uses: mih-kopylov/workflows/.github/workflows/release.yml@master
+    with:
+      docker: true
