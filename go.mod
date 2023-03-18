@@ -13,7 +13,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/samber/lo v1.37.0
 	github.com/sirupsen/logrus v1.9.0
-	google.golang.org/api v0.113.0
+	google.golang.org/api v0.114.0
 	google.golang.org/grpc v1.53.0
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -59,6 +59,6 @@ require (
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/appengine/v2 v2.0.2 // indirect
 	google.golang.org/genproto v0.0.0-20230306155012-7f2fa6fef1f4 // indirect
-	google.golang.org/protobuf v1.29.1 // indirect
+	google.golang.org/protobuf v1.30.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
