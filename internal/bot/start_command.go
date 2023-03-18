@@ -31,9 +31,16 @@ func (c *StartCommand) Description() string {
 }
 
 func (c *StartCommand) Handle(message *tgbotapi.Message) error {
-	_, err := c.states.GetState(message.Chat.ID)
+	userState, err := c.states.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
+	}
+
+	userState.UserName = message.Chat.UserName
+	userState.FullName = message.Chat.FirstName + " " + message.Chat.LastName
+	err = c.states.SetState(userState)
+	if err != nil {
+		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
 	parsedTemplate, err := template.New("start").Parse(startTextTemplate)
