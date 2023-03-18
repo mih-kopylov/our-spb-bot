@@ -9,10 +9,6 @@ on:
       - "**"
   workflow_dispatch: {}
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
-
 jobs:
   build:
     uses: mih-kopylov/workflows/.github/workflows/build.yml@master
