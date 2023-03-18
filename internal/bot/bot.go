@@ -107,8 +107,7 @@ func (b *TgBot) handleCallback(callbackQuery *tgbotapi.CallbackQuery) error {
 	data := callbackQuery.Data
 	commandName, value, found := strings.Cut(data, SectionSeparator)
 	if !found {
-		tgbotapi.NewMessage(callbackQuery.Message.Chat.ID, "unsupported callback data format")
-		return nil
+		return errorx.IllegalArgument.New("unsupported callback data format")
 	}
 
 	comm, err := di.GetInstanceSafe(commandName)
