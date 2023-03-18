@@ -38,8 +38,16 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to count messages in the queue")
 	}
 
+	var authorizedInPortal string
+	if userState.Token == "" {
+		authorizedInPortal = "нет"
+	} else {
+		authorizedInPortal = userState.Login
+	}
+
 	reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
 Пользователь: @%v
+Авторизован: %v
 Сообщений отправлено: %v
 Ожидает отправки: %v
 Не удалось отправить: %v
@@ -48,6 +56,7 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 /message - отправить новое обращение 
 `,
 		message.Chat.UserName,
+		authorizedInPortal,
 		userState.SentMessagesCount,
 		messagesCount[queue.StatusCreated],
 		messagesCount[queue.StatusFailed],
