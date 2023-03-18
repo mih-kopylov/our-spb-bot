@@ -7,9 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- `/reset_status` command to reset failed messages status
+
 ### Changed
 
-- Do not try sending a message if user is rate limited 
+- Do not try sending a message if user is rate limited
 
 ## [0.7.1] - 2023-03-12
 

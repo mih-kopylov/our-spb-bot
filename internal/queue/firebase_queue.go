@@ -64,6 +64,31 @@ func (q *FirebaseQueue) Poll() (*Message, error) {
 
 	logrus.Debug("no appropriate messages found")
 	return nil, nil
+}
+
+func (q *FirebaseQueue) UpdateEachMessage(userId int64, updater func(*Message)) error {
+	query := q.fc.Collection(collection).Where("userId", "==", userId)
+	documents := query.Documents(context.Background())
+	snapshots, err := documents.GetAll()
+	if err != nil {
+		return errorx.EnhanceStackTrace(err, "failed to filter messages")
+	}
+
+	var message Message
+	for _, snapshot := range snapshots {
+		err = snapshot.DataTo(&message)
+		if err != nil {
+			return errorx.EnhanceStackTrace(err, "failed to deserialize message: id=%v", snapshot.Ref.ID)
+		}
+
+		updater(&message)
+		_, err := q.fc.Collection(collection).Doc(snapshot.Ref.ID).Set(context.Background(), message)
+		if err != nil {
+			return errorx.EnhanceStackTrace(err, "failed to store message: id=%v", snapshot.Ref.ID)
+		}
+	}
+
+	return nil
 
 }
 

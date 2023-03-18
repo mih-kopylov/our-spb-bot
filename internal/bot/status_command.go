@@ -51,7 +51,8 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 		userState.SentMessagesCount,
 		messagesCount[queue.StatusCreated],
 		messagesCount[queue.StatusFailed],
-		messagesCount[queue.StatusAwaitingAuthorization]))
+		messagesCount[queue.StatusAwaitingAuthorization],
+	))
 	_, err = c.tgbot.api.Send(reply)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")
