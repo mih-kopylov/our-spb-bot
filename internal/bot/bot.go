@@ -24,10 +24,11 @@ const (
 func RegisterBotBean() {
 	_ = lo.Must(di.RegisterBean(TgBotBeanId, reflect.TypeOf((*TgBot)(nil))))
 
-	_ = lo.Must(di.RegisterBean("start", reflect.TypeOf((*StartCommand)(nil))))
-	_ = lo.Must(di.RegisterBean("status", reflect.TypeOf((*StatusCommand)(nil))))
-	_ = lo.Must(di.RegisterBean("message", reflect.TypeOf((*MessageCommand)(nil))))
-	_ = lo.Must(di.RegisterBean("login", reflect.TypeOf((*LoginCommand)(nil))))
+	_ = lo.Must(di.RegisterBean(StartCommandName, reflect.TypeOf((*StartCommand)(nil))))
+	_ = lo.Must(di.RegisterBean(StatusCommandName, reflect.TypeOf((*StatusCommand)(nil))))
+	_ = lo.Must(di.RegisterBean(MessageCommandName, reflect.TypeOf((*MessageCommand)(nil))))
+	_ = lo.Must(di.RegisterBean(LoginCommandName, reflect.TypeOf((*LoginCommand)(nil))))
+	_ = lo.Must(di.RegisterBean(ResetStatusCommandName, reflect.TypeOf((*ResetStatusCommand)(nil))))
 
 	RegisterMessageFormBean()
 	RegisterLoginFormBean()
@@ -53,7 +54,7 @@ func (b *TgBot) RegisterBotCommands() {
 
 }
 func (b *TgBot) GetCommands() []string {
-	return []string{StartCommandName, LoginCommandName, MessageCommandName, StatusCommandName}
+	return []string{StartCommandName, LoginCommandName, MessageCommandName, StatusCommandName, ResetStatusCommandName}
 }
 
 func (b *TgBot) ProcessUpdates() {

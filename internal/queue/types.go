@@ -9,6 +9,7 @@ type MessageQueue interface {
 	Poll() (*Message, error)
 	UserMessagesCount(userId int64) (map[Status]int, error)
 	ResetAwaitingAuthorizationMessages(userId int64) error
+	UpdateEachMessage(userId int64, updater func(*Message)) error
 }
 
 type Message struct {
