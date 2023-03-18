@@ -10,6 +10,8 @@ type States interface {
 
 type UserState struct {
 	UserId                int64     `firestore:"userId"`
+	UserName              string    `firestore:"userName"`
+	FullName              string    `firestore:"fullName"`
 	CurrentCategoryNodeId string    `firestore:"currentCategoryNodeId"`
 	MessageText           string    `firestore:"messageText"`
 	Files                 []string  `firestore:"files"`
