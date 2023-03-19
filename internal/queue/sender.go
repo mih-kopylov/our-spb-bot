@@ -10,6 +10,7 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"math"
+	"net/http"
 	"reflect"
 	"time"
 )
@@ -201,6 +202,11 @@ func (s *MessageSender) returnMessage(message *Message, description string) {
 	err := s.queue.Add(message)
 	if err != nil {
 		logrus.Error(errorx.IllegalState.New("failed to return a failed message back to queue"))
+	} else {
+		logrus.WithField("id", message.Id).
+			WithField("status", message.Status).
+			WithField("failDescription", message.FailDescription).
+			Info("message returned to the queue")
 	}
 }
 
@@ -212,12 +218,16 @@ func (s *MessageSender) getFiles(message *Message) (map[string][]byte, error) {
 			return nil, errorx.EnhanceStackTrace(err, "failed to donwload file")
 		}
 
-		fileBytes, err := response.ToBytes()
+		responseBytes, err := response.ToBytes()
 		if err != nil {
-			return nil, errorx.EnhanceStackTrace(err, "failed to get response bytes")
+			return nil, errorx.EnhanceStackTrace(err, "failed to get response bytes: code=%v", response.StatusCode)
 		}
 
-		result[fmt.Sprintf("file_%v.jpg", i)] = fileBytes
+		if response.StatusCode != http.StatusOK {
+			return nil, errorx.IllegalArgument.New("failed to download file: file=%v, response=%v", fileUrl, responseBytes)
+		}
+
+		result[fmt.Sprintf("file_%v.jpg", i)] = responseBytes
 	}
 	return result, nil
 }

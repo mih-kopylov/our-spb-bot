@@ -85,7 +85,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
 
-		err := f.messageQueue.Add(&queue.Message{
+		queueMessage := queue.Message{
 			Id:         shortuuid.New(),
 			UserId:     userState.UserId,
 			CategoryId: categoryTreeNode.Category.Id,
@@ -95,24 +95,31 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			Latitude:   message.Location.Latitude,
 			CreatedAt:  time.Now(),
 			Status:     queue.StatusCreated,
-		})
+		}
+		err := f.messageQueue.Add(&queueMessage)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to add message to queue")
 		}
 
-		replyText := fmt.Sprintf(
-			`
+		replyText := fmt.Sprintf(`
 Сообщение добавлено в очередь и будет отправлено при первой возможности.
 
 Пользователь: @%v
+Сообщение: %v
 Категория: %v
 Текст: %v
 Локация: %v %v
-Файлы: %v
+Файлы: %v шт.: %v
 
 /message - отправить новое обращение 
-`, message.Chat.UserName, categoryTreeNode.Category.Id, userState.MessageText,
-			message.Location.Longitude, message.Location.Latitude, userState.Files,
+`, message.Chat.UserName,
+			queueMessage.Id,
+			queueMessage.CategoryId,
+			queueMessage.Text,
+			queueMessage.Longitude,
+			queueMessage.Latitude,
+			len(queueMessage.FileUrls),
+			queueMessage.FileUrls,
 		)
 		err = f.tgbot.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
