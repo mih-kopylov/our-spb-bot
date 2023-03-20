@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"strings"
 	"text/template"
@@ -20,6 +21,7 @@ const (
 type StartCommand struct {
 	states state.States `di.inject:"States"`
 	tgbot  *TgBot       `di.inject:"TgBot"`
+	info   *info.Info   `di.inject:"Info"`
 }
 
 func (c *StartCommand) Name() string {
@@ -49,7 +51,11 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 	}
 
 	commands := c.tgbot.GetCommands()
-	context := renderContext{}
+	context := renderContext{
+		Commands: nil,
+		Version:  c.info.Version,
+		Commit:   c.info.Commit,
+	}
 	for _, commandName := range commands {
 		comm := di.GetInstance(commandName).(Command)
 		context.Commands = append(
@@ -84,6 +90,8 @@ func (c *StartCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {
 
 type renderContext struct {
 	Commands []commandDescription
+	Version  string
+	Commit   string
 }
 
 type commandDescription struct {

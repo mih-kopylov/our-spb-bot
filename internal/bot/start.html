@@ -23,3 +23,6 @@
 {{ range $value := .Commands }}
 * /{{ $value.Name }} - {{ $value.Description}}
 {{ end }}
+
+<b>Версия приложения:</b>
+{{ .Version }} {{ .Commit }}

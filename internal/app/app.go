@@ -5,6 +5,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
+	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
@@ -13,8 +14,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func RunApplication() error {
+func RunApplication(version string, commit string) error {
 	logrus.SetLevel(logrus.DebugLevel)
+	info.RegisterBean(version, commit)
 	conf := config.RegisterBean()
 	storage.RegisterBean(conf)
 	state.RegisterBean()
