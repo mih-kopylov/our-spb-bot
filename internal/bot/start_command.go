@@ -35,6 +35,15 @@ func (c *StartCommand) Description() string {
 func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 	userState, err := c.states.GetState(message.Chat.ID)
 	if err != nil {
+		if errorx.IsOfType(err, state.ErrRateLimited) {
+			err = c.tgbot.SendMessage(message.Chat, "Превышен лимит подключений к базе данных")
+			if err != nil {
+				return errorx.EnhanceStackTrace(err, "failed to send reply")
+			}
+
+			return nil
+		}
+
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 

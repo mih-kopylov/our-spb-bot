@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Version info to `/start` command output
 
+### Changed
+
+- Reply about database rate limits on `/start` command
+
 ## [0.9.2] - 2023-03-20
 
 ### Fixed

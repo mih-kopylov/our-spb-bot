@@ -1,12 +1,20 @@
 package state
 
-import "time"
+import (
+	"github.com/joomcode/errorx"
+	"time"
+)
 
 type States interface {
 	// GetState Puts a new user into the context. If the user already exists in the context, it's kept,
 	GetState(userId int64) (*UserState, error)
 	SetState(state *UserState) error
 }
+
+var (
+	StatesErrors   = errorx.NewNamespace("States")
+	ErrRateLimited = StatesErrors.NewType("RateLimited")
+)
 
 type UserState struct {
 	UserId                int64     `firestore:"userId"`

@@ -39,6 +39,11 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 			}
 			return &newState, nil
 		}
+
+		if status.Code(err) == codes.ResourceExhausted {
+			return nil, ErrRateLimited.New("failed to get user state")
+		}
+
 		return nil, errorx.EnhanceStackTrace(err, "failed to get state document snapshot")
 	}
 
