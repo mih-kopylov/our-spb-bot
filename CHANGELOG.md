@@ -7,11 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Endless loop when can't download files or another error
+
 ## [0.9.1] - 2023-03-18
 
 ### Fixed
 
-- Fix error when sender fails to download files
+- Error when sender fails to download files
 
 ## [0.9.0] - 2023-03-18
 

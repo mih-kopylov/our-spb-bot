@@ -64,7 +64,7 @@ func (s *MessageSender) sendNextMessage() {
 	userState, err := s.states.GetState(message.UserId)
 	if err != nil {
 		logrus.Error(errorx.EnhanceStackTrace(err, "failed to get user state"))
-		s.returnMessage(message, "failed to get user state")
+		s.returnMessage(message, StatusFailed, "failed to get user state")
 		return
 	}
 
@@ -81,7 +81,7 @@ func (s *MessageSender) sendNextMessage() {
 		logrus.WithField("id", message.Id).
 			Info("user is rate limited until " + userState.RateLimitedUntil.Format(time.RFC3339))
 		message.RetryAfter = userState.RateLimitedUntil
-		s.returnMessage(message, "user is rate limited")
+		s.returnMessage(message, StatusCreated, "user is rate limited")
 		return
 	}
 
@@ -89,7 +89,7 @@ func (s *MessageSender) sendNextMessage() {
 	request, err := s.spbClient.CreateSendProblemRequest(message.CategoryId, message.Text, message.Latitude, message.Longitude)
 	if err != nil {
 		logrus.Error(errorx.EnhanceStackTrace(err, "failed to create a request"))
-		s.returnMessage(message, "failed to create a request")
+		s.returnMessage(message, StatusFailed, "failed to create a request")
 		return
 	}
 
@@ -97,7 +97,7 @@ func (s *MessageSender) sendNextMessage() {
 	files, err := s.getFiles(message)
 	if err != nil {
 		logrus.Error(errorx.EnhanceStackTrace(err, "failed to get message files"))
-		s.returnMessage(message, "failed to get messages files")
+		s.returnMessage(message, StatusFailed, "failed to get messages files")
 		return
 	}
 
@@ -156,7 +156,7 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 
 func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message) error {
 	if userState.Login == "" {
-		s.returnMessage(message, "user not authorized")
+		s.returnMessage(message, StatusFailed, "user not authorized")
 		return errorx.IllegalState.New("user not authorized")
 	}
 
@@ -167,11 +167,11 @@ func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Mess
 		userState.Password = ""
 		err2 := s.states.SetState(userState)
 		if err2 != nil {
-			s.returnMessage(message, "failed to set user state")
+			s.returnMessage(message, StatusFailed, "failed to set user state")
 			return errorx.EnhanceStackTrace(err2, "failed to set user state")
 		}
 
-		s.returnMessage(message, "failed to reauthorize")
+		s.returnMessage(message, StatusFailed, "failed to reauthorize")
 		return errorx.EnhanceStackTrace(err, "failed to reauthorize")
 	}
 
@@ -179,7 +179,7 @@ func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Mess
 	userState.Token = tokenResponse.AccessToken
 	err = s.states.SetState(userState)
 	if err != nil {
-		s.returnMessage(message, "failed to set user state")
+		s.returnMessage(message, StatusFailed, "failed to set user state")
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
@@ -189,15 +189,14 @@ func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Mess
 func (s *MessageSender) returnMessageIncreaseTries(message *Message, status Status, description string) {
 	message.Tries++
 	if message.Tries >= MaxTries {
-		message.Status = StatusFailed
-	} else {
-		message.Status = status
+		status = StatusFailed
 	}
-	s.returnMessage(message, description)
+	s.returnMessage(message, status, description)
 }
 
-func (s *MessageSender) returnMessage(message *Message, description string) {
+func (s *MessageSender) returnMessage(message *Message, status Status, description string) {
 	message.LastTriedAt = time.Now()
+	message.Status = status
 	message.FailDescription = description
 	err := s.queue.Add(message)
 	if err != nil {
