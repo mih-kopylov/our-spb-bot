@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Reply about database rate limits on `/start` command
+- Reply about database rate limits on `/start` and `/status` commands
 
 ## [0.9.2] - 2023-03-20
 
