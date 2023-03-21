@@ -6,6 +6,7 @@ import (
 	"github.com/goioc/di"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
@@ -29,10 +30,11 @@ const (
 
 var (
 	spbLocation   = time.FixedZone("UTC+3", 3*60*60)
-	sleepDuration = 10 * time.Minute
+	sleepDuration time.Duration
 )
 
-func RegisterSenderBean() {
+func RegisterSenderBean(conf *config.Config) {
+	sleepDuration = conf.SleepDuration
 	_ = lo.Must(di.RegisterBean(SenderBeanId, reflect.TypeOf((*MessageSender)(nil))))
 
 	lo.Must0(di.RegisterBeanPostprocessor(reflect.TypeOf((*MessageSender)(nil)), func(sender any) error {
@@ -58,7 +60,7 @@ func (s *MessageSender) sendNextMessage() {
 		return
 	}
 	if message == nil {
-		logrus.Debug("no messages found, sleeping for" + sleepDuration.String())
+		logrus.Debug("no messages found, sleeping for " + sleepDuration.String())
 		time.Sleep(sleepDuration)
 		return
 	}

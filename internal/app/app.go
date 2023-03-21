@@ -24,7 +24,7 @@ func RunApplication(version string, commit string) error {
 	bot.RegisterApiBean(conf)
 	bot.RegisterBotBean()
 	queue.RegisterQueueBean()
-	queue.RegisterSenderBean()
+	queue.RegisterSenderBean(conf)
 	spb.RegisterBean(conf)
 	lo.Must0(di.InitializeContainer())
 
