@@ -5,13 +5,15 @@ import (
 	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
 	"github.com/samber/lo"
+	"time"
 )
 
 type Config struct {
-	Token                  string `env:"TELEGRAM_API_TOKEN,required"`
-	OurSpbClientId         string `env:"OURSPB_CLIENT_ID,required"`
-	OurSpbSecret           string `env:"OURSPB_SECRET,required"`
-	FirebaseServiceAccount string `env:"FIREBASE_SERVICE_ACCOUNT,required"`
+	Token                  string        `env:"TELEGRAM_API_TOKEN,required"`
+	OurSpbClientId         string        `env:"OURSPB_CLIENT_ID,required"`
+	OurSpbSecret           string        `env:"OURSPB_SECRET,required"`
+	FirebaseServiceAccount string        `env:"FIREBASE_SERVICE_ACCOUNT,required"`
+	SleepDuration          time.Duration `env:"SLEEP_DURATION,required"`
 }
 
 const (
