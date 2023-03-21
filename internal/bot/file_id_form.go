@@ -3,7 +3,6 @@ package bot
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/goioc/di"
-	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
 	"reflect"
 )
@@ -13,8 +12,7 @@ const (
 )
 
 type FileIdForm struct {
-	states state.States `di.inject:"States"`
-	tgbot  *TgBot       `di.inject:"TgBot"`
+	tgbot *TgBot `di.inject:"TgBot"`
 }
 
 func RegisterFileIdFormBean() {
