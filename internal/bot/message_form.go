@@ -107,6 +107,8 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 Файлы: %v шт.: %v
 
 /message - отправить новое обращение 
+
+/status - статус обращений
 `, message.Chat.UserName,
 			queueMessage.Id,
 			queueMessage.CategoryId,
