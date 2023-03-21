@@ -49,6 +49,7 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 
 	userState.UserName = message.Chat.UserName
 	userState.FullName = message.Chat.FirstName + " " + message.Chat.LastName
+	userState.MessageHandlerName = ""
 	err = c.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
