@@ -16,7 +16,7 @@ type Message struct {
 	Id              string    `firestore:"id"`
 	UserId          int64     `firestore:"userId"`
 	CategoryId      int64     `firestore:"categoryId"`
-	FileUrls        []string  `firestore:"fileUrls"`
+	Files           []string  `firestore:"files"`
 	Text            string    `firestore:"text"`
 	Longitude       float64   `firestore:"longitude"`
 	Latitude        float64   `firestore:"latitude"`

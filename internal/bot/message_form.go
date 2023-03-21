@@ -56,12 +56,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			},
 		)
 
-		fileUrl, err := f.tgbot.api.GetFileDirectURL(maxPhotoSize.FileID)
-		if err != nil {
-			return errorx.EnhanceStackTrace(err, "failed to get direct file link")
-		}
-
-		userState.Files = append(userState.Files, fileUrl)
+		userState.Files = append(userState.Files, maxPhotoSize.FileID)
 		err = f.states.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
@@ -89,7 +84,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			Id:         shortuuid.New(),
 			UserId:     userState.UserId,
 			CategoryId: categoryTreeNode.Category.Id,
-			FileUrls:   userState.Files,
+			Files:      userState.Files,
 			Text:       userState.MessageText,
 			Longitude:  message.Location.Longitude,
 			Latitude:   message.Location.Latitude,
@@ -118,8 +113,8 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			queueMessage.Text,
 			queueMessage.Longitude,
 			queueMessage.Latitude,
-			len(queueMessage.FileUrls),
-			queueMessage.FileUrls,
+			len(queueMessage.Files),
+			queueMessage.Files,
 		)
 		err = f.tgbot.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {

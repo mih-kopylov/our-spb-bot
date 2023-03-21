@@ -2,6 +2,7 @@ package queue
 
 import (
 	"fmt"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/goioc/di"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
@@ -16,9 +17,10 @@ import (
 )
 
 type MessageSender struct {
-	states    state.States `di.inject:"States"`
-	queue     MessageQueue `di.inject:"Queue"`
-	spbClient spb.Client   `di.inject:"SpbClient"`
+	states    state.States     `di.inject:"States"`
+	queue     MessageQueue     `di.inject:"Queue"`
+	spbClient spb.Client       `di.inject:"SpbClient"`
+	api       *tgbotapi.BotAPI `di.inject:"TgApi"`
 }
 
 const (
@@ -26,7 +28,8 @@ const (
 )
 
 var (
-	spbLocation = time.FixedZone("UTC+3", 3*60*60)
+	spbLocation   = time.FixedZone("UTC+3", 3*60*60)
+	sleepDuration = 10 * time.Minute
 )
 
 func RegisterSenderBean() {
@@ -50,13 +53,13 @@ func (s *MessageSender) sendNextMessage() {
 	logrus.Debug("polling messages")
 	message, err := s.queue.Poll()
 	if err != nil {
-		logrus.Error(errorx.EnhanceStackTrace(err, "failed to poll next message"))
-		time.Sleep(10 * time.Minute)
+		logrus.Error(errorx.EnhanceStackTrace(err, "failed to poll next message, sleeping for "+sleepDuration.String()))
+		time.Sleep(sleepDuration)
 		return
 	}
 	if message == nil {
-		logrus.Debug("no messages found, sleeping")
-		time.Sleep(10 * time.Minute)
+		logrus.Debug("no messages found, sleeping for" + sleepDuration.String())
+		time.Sleep(sleepDuration)
 		return
 	}
 
@@ -211,7 +214,12 @@ func (s *MessageSender) returnMessage(message *Message, status Status, descripti
 
 func (s *MessageSender) getFiles(message *Message) (map[string][]byte, error) {
 	result := map[string][]byte{}
-	for i, fileUrl := range message.FileUrls {
+	for i, fileId := range message.Files {
+		fileUrl, err := s.api.GetFileDirectURL(fileId)
+		if err != nil {
+			return nil, errorx.EnhanceStackTrace(err, "failed to get file url")
+		}
+
 		response, err := req.R().Get(fileUrl)
 		if err != nil {
 			return nil, errorx.EnhanceStackTrace(err, "failed to donwload file")
@@ -223,7 +231,7 @@ func (s *MessageSender) getFiles(message *Message) (map[string][]byte, error) {
 		}
 
 		if response.StatusCode != http.StatusOK {
-			return nil, errorx.IllegalArgument.New("failed to download file: file=%v, response=%v", fileUrl, responseBytes)
+			return nil, errorx.IllegalArgument.New("failed to download file: fileId=%v, fileUrl=%v, response=%v", fileId, fileUrl, responseBytes)
 		}
 
 		result[fmt.Sprintf("file_%v.jpg", i)] = responseBytes
