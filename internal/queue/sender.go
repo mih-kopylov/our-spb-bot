@@ -154,7 +154,7 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state")
 		} else {
 			message.RetryAfter = nextTryTime
-			s.returnMessageIncreaseTries(message, StatusCreated, "too many requests")
+			s.returnMessage(message, StatusCreated, "too many requests")
 		}
 	}
 }

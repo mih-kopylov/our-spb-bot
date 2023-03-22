@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Do not increase try count for rate limited requests
+
 ## [0.12.0] - 2023-03-21
 
 ### Added
