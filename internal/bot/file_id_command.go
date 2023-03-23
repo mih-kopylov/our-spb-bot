@@ -35,7 +35,9 @@ func (c *FileIdCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
-	return c.tgbot.SendMessage(message.Chat, "Отправляйте файлы, в ответ я напишу их идентификатор")
+	return c.tgbot.SendMessage(message.Chat, `Отправляйте файлы, в ответ я напишу их идентификатор.
+
+Если написать идентификатор, то я пришлю ссылку на скачивание фото.`)
 }
 
 func (c *FileIdCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {

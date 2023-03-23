@@ -52,7 +52,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	if len(message.Photo) > 0 {
 		maxPhotoSize := lo.MaxBy(
 			message.Photo, func(a tgbotapi.PhotoSize, b tgbotapi.PhotoSize) bool {
-				return a.FileSize > b.FileSize
+				return a.Width*a.Height > b.Width*b.Height
 			},
 		)
 
@@ -62,8 +62,11 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 
+		reply := fmt.Sprintf(`Фотография добавлена
+
+Размер: %vx%v`, maxPhotoSize.Width, maxPhotoSize.Height)
 		return f.tgbot.SendMessageCustom(
-			message.Chat, "Фотография добавлена", func(reply *tgbotapi.MessageConfig) {
+			message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
 				reply.ReplyMarkup = tgbotapi.NewReplyKeyboard(
 					tgbotapi.NewKeyboardButtonRow(

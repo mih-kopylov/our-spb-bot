@@ -1,6 +1,7 @@
 package bot
 
 import (
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/goioc/di"
 	"github.com/samber/lo"
@@ -23,10 +24,33 @@ func (f *FileIdForm) Handle(message *tgbotapi.Message) error {
 	if len(message.Photo) > 0 {
 		maxPhotoSize := lo.MaxBy(
 			message.Photo, func(a tgbotapi.PhotoSize, b tgbotapi.PhotoSize) bool {
-				return a.FileSize > b.FileSize
+				return a.Width*a.Height > b.Width*b.Height
 			},
 		)
-		err := f.tgbot.SendMessageCustom(message.Chat, "FileId = "+maxPhotoSize.FileID, func(reply *tgbotapi.MessageConfig) {
+
+		directURL, err := f.tgbot.api.GetFileDirectURL(maxPhotoSize.FileID)
+		if err != nil {
+			return err
+		}
+
+		reply := fmt.Sprintf(`FileId: %v
+Url: %v`, maxPhotoSize.FileID, directURL)
+		err = f.tgbot.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
+			reply.ReplyToMessageID = message.MessageID
+		})
+		if err != nil {
+			return err
+		}
+	} else if message.Text != "" {
+		fileId := message.Text
+		directURL, err := f.tgbot.api.GetFileDirectURL(fileId)
+		if err != nil {
+			return err
+		}
+
+		reply := fmt.Sprintf(`FileId: %v
+Url: %v`, fileId, directURL)
+		err = f.tgbot.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {
