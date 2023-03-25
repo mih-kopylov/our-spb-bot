@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Read a single document when polling a message
+- Add logging when saving user state
+
 ## [0.12.2] - 2023-03-23
 
 ### Fixed

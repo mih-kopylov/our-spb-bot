@@ -36,7 +36,8 @@ func (q *FirebaseQueue) Add(message *Message) error {
 func (q *FirebaseQueue) Poll() (*Message, error) {
 	query := q.fc.Collection(collection).
 		Where("status", "==", StatusCreated).
-		Where("retryAfter", "<=", time.Now())
+		Where("retryAfter", "<=", time.Now()).
+		Limit(1)
 	snapshots, err := query.Documents(context.Background()).GetAll()
 	if err != nil {
 		return nil, errorx.EnhanceStackTrace(err, "failed to poll a message")
