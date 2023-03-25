@@ -8,6 +8,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 	"net/http"
 	"strings"
 	"time"
@@ -45,8 +46,10 @@ func newReqClient(conf *config.Config) Client {
 
 func (r *ReqClient) GetNearestBuildings(latitude float64, longitude float64) (*NearestBuildingResponse, error) {
 	var result NearestBuildingResponse
+	var errorResponse ErrorResponse
 	request := r.client.R()
 	request.SetSuccessResult(&result)
+	request.SetErrorResult(&result)
 	response, err := request.
 		SetQueryParam("latitude", fmt.Sprint(latitude)).
 		SetQueryParam("longitude", fmt.Sprint(longitude)).
@@ -56,8 +59,7 @@ func (r *ReqClient) GetNearestBuildings(latitude float64, longitude float64) (*N
 		return nil, errorx.EnhanceStackTrace(err, "failed to get reasons")
 	}
 	if response.IsErrorState() || !response.IsSuccessState() {
-		r.printDebugDump(response)
-		return nil, ErrBadRequest.New("failed to get nearest buildings: error=%v", response.StatusCode)
+		return nil, ErrBadRequest.New("failed to get nearest buildings: status=%v, response=%v", response.StatusCode, errorResponse.String())
 	}
 
 	return &result, nil
@@ -65,8 +67,10 @@ func (r *ReqClient) GetNearestBuildings(latitude float64, longitude float64) (*N
 
 func (r *ReqClient) GetReasons() ([]CityResponse, error) {
 	var result []CityResponse
+	var errorResponse ErrorResponse
 	request := r.client.R()
 	request.SetSuccessResult(&result)
+	request.SetErrorResult(&result)
 	response, err := request.Get("/api/v4.0/classifier")
 	if err != nil {
 		r.printDebugDump(response)
@@ -74,8 +78,7 @@ func (r *ReqClient) GetReasons() ([]CityResponse, error) {
 	}
 
 	if response.IsErrorState() || !response.IsSuccessState() {
-		r.printDebugDump(response)
-		return nil, ErrBadRequest.New("failed to get reasons: error=%v", response.StatusCode)
+		return nil, ErrBadRequest.New("failed to get reasons: status=%v, response=%v", response.StatusCode, errorResponse.String())
 	}
 
 	return result, nil
@@ -98,7 +101,6 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 	}
 
 	if response.IsErrorState() || !response.IsSuccessState() {
-		r.printDebugDump(response)
 		if strings.Contains(errorResponse.String(), "Выберите не дом.") {
 			return ErrExpectingNotBuildingCoords.New("failed to send a message, expecting not a building coordinates")
 		}
@@ -108,7 +110,7 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 		if response.StatusCode == http.StatusUnauthorized {
 			return ErrUnauthorized.Wrap(err, "token expired")
 		}
-		return ErrBadRequest.New("failed to send a message: error=%v, message=%v", response.StatusCode, errorResponse.String())
+		return ErrBadRequest.New("failed to send a message: status=%v, response=%v", response.StatusCode, errorResponse.String())
 	}
 
 	return nil
@@ -177,8 +179,7 @@ func (r *ReqClient) Login(login string, password string) (*TokenResponse, error)
 	}
 
 	if response.IsErrorState() || !response.IsSuccessState() {
-		r.printDebugDump(response)
-		return nil, ErrUnauthorized.New("failed to login: error=%v", responseError.String())
+		return nil, ErrUnauthorized.New("failed to login: status=%v, response=%v", response.StatusCode, responseError.String())
 	}
 
 	return &result, nil
@@ -222,10 +223,9 @@ func (r *ReqClient) getNearestBuilding(latitude float64, longitude float64) (*Bu
 	return &nearestBuildings.Buildings[0], nil
 }
 
-type ErrorResponse struct {
-	NonFieldErrors []string `json:"non_field_errors"`
-}
+type ErrorResponse map[string]any
 
-func (e *ErrorResponse) String() string {
-	return strings.Join(e.NonFieldErrors, "\n")
+func (r *ErrorResponse) String() string {
+	out, _ := yaml.Marshal(r)
+	return string(out)
 }
