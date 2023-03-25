@@ -49,24 +49,19 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 		return nil, errorx.EnhanceStackTrace(err, "failed to get state document snapshot")
 	}
 
-	var userState UserState
-	err = snapshot.DataTo(&userState)
+	var state UserState
+	err = snapshot.DataTo(&state)
 	if err != nil {
 		return nil, errorx.EnhanceStackTrace(err, "failed to deserialize user state data: userId=%v", userId)
 	}
 
-	return &userState, nil
+	f.debugUserState(&state, "read user state")
+
+	return &state, nil
 }
 
 func (f *FirebaseStates) SetState(state *UserState) error {
-	if logrus.IsLevelEnabled(logrus.DebugLevel) {
-		stateYaml, err := yaml.Marshal(state)
-		if err != nil {
-			logrus.WithField("userId", state.UserId).Error("failed to serialize user state")
-		} else {
-			logrus.WithField("state", string(stateYaml)).Debug("saving user state")
-		}
-	}
+	f.debugUserState(state, "saving user state")
 
 	wr, err := f.fc.Collection(collection).Doc(strconv.FormatInt(state.UserId, 10)).Set(context.Background(), state)
 	if err != nil {
@@ -76,4 +71,15 @@ func (f *FirebaseStates) SetState(state *UserState) error {
 	}
 
 	return nil
+}
+
+func (f *FirebaseStates) debugUserState(state *UserState, message string) {
+	if logrus.IsLevelEnabled(logrus.DebugLevel) {
+		stateYaml, err := yaml.Marshal(state)
+		if err != nil {
+			logrus.WithField("userId", state.UserId).Error("failed to serialize user state")
+		} else {
+			logrus.WithField("state", string(stateYaml)).Debug(message)
+		}
+	}
 }
