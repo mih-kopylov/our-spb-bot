@@ -7,6 +7,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"time"
 )
 
 const (
@@ -54,9 +55,17 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 		authorizedInPortal = userState.Login
 	}
 
+	var rateLimited string
+	if userState.RateLimitedUntil.After(time.Now()) {
+		rateLimited = "до " + userState.RateLimitedUntil.Format(time.RFC3339)
+	} else {
+		rateLimited = "нет"
+	}
+
 	reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
 Пользователь: @%v
 Авторизован: %v
+Заблокирован: %v
 Сообщений отправлено: %v
 Ожидает отправки: %v
 Не удалось отправить: %v
@@ -66,6 +75,7 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 `,
 		message.Chat.UserName,
 		authorizedInPortal,
+		rateLimited,
 		userState.SentMessagesCount,
 		messagesCount[queue.StatusCreated],
 		messagesCount[queue.StatusFailed],
