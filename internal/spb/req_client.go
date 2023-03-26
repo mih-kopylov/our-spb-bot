@@ -97,7 +97,7 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 	response, err := request.Post("/api/v4.0/problems/")
 	if err != nil {
 		r.printDebugDump(response)
-		return errorx.EnhanceStackTrace(err, "failed to send a message")
+		return ErrFailedRequest.Wrap(err, "failed to send a message")
 	}
 
 	if response.IsErrorState() || !response.IsSuccessState() {

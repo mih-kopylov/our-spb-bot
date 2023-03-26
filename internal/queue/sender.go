@@ -134,17 +134,14 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 			message.RetryAfter = time.Now()
 			s.returnMessageIncreaseTries(message, StatusCreated, "token expired")
 		}
-	}
-	if errorx.IsOfType(err, spb.ErrExpectingNotBuildingCoords) {
+	} else if errorx.IsOfType(err, spb.ErrExpectingNotBuildingCoords) {
 		message.RetryAfter = time.Now()
 		message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
 		s.returnMessageIncreaseTries(message, StatusCreated, "service expects not building coordinates")
-	}
-	if errorx.IsOfType(err, spb.ErrBadRequest) {
+	} else if errorx.IsOfType(err, spb.ErrBadRequest) {
 		s.returnMessageIncreaseTries(message, StatusFailed, err.Error())
-	}
-	if errorx.IsOfType(err, spb.ErrTooManyRequests) {
-		year, month, day := time.Now().AddDate(0, 0, 1).Date()
+	} else if errorx.IsOfType(err, spb.ErrTooManyRequests) {
+		year, month, day := time.Now().In(spbLocation).AddDate(0, 0, 1).Date()
 		nextTryTime := time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
 
 		userState.RateLimitedUntil = nextTryTime
@@ -156,6 +153,8 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 			message.RetryAfter = nextTryTime
 			s.returnMessage(message, StatusCreated, "too many requests")
 		}
+	} else {
+		s.returnMessageIncreaseTries(message, StatusFailed, "failed to send a message: "+err.Error())
 	}
 }
 

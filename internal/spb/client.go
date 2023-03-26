@@ -16,6 +16,7 @@ var (
 	OurSpbHttpErrors              = errorx.NewNamespace("OurSpbHttp")
 	ErrTooManyRequests            = OurSpbHttpErrors.NewType("TooManyRequests")
 	ErrBadRequest                 = OurSpbHttpErrors.NewType("BadRequest")
+	ErrFailedRequest              = OurSpbHttpErrors.NewType("FailedRequest")
 	ErrUnauthorized               = OurSpbHttpErrors.NewType("Unauthorized")
 	ErrExpectingNotBuildingCoords = OurSpbHttpErrors.NewType("ExpectingNotBuildingCoords")
 )
