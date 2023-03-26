@@ -69,7 +69,7 @@ func (f *FirebaseStates) SetState(state *UserState) error {
 		return errorx.EnhanceStackTrace(err, "failed to set user state: userId=%v", state.UserId)
 	} else {
 		logrus.WithField("userId", state.UserId).
-			WithField("updateTime", wr.UpdateTime.Format(time.RFC3339)).
+			WithField("updateTime", wr.UpdateTime.Format(time.RFC3339Nano)).
 			Debug("user state saved")
 	}
 
