@@ -7,6 +7,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
+	"gopkg.in/yaml.v3"
 	"reflect"
 	"time"
 )
@@ -25,6 +26,8 @@ func RegisterQueueBean() {
 }
 
 func (q *FirebaseQueue) Add(message *Message) error {
+	q.debugMessage(message, "adding message to queue")
+
 	_, err := q.fc.Collection(collection).Doc(message.Id).Create(context.Background(), message)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to put message to queue")
@@ -59,6 +62,8 @@ func (q *FirebaseQueue) Poll() (*Message, error) {
 		if err != nil {
 			return nil, errorx.EnhanceStackTrace(err, "failed to delete pulled message")
 		}
+
+		q.debugMessage(&result, "message polled")
 
 		return &result, nil
 	}
@@ -139,4 +144,15 @@ func (q *FirebaseQueue) UserMessagesCount(userId int64) (map[Status]int, error) 
 	}
 
 	return result, nil
+}
+
+func (q *FirebaseQueue) debugMessage(message *Message, text string) {
+	if logrus.IsLevelEnabled(logrus.DebugLevel) {
+		messageYaml, err := yaml.Marshal(message)
+		if err != nil {
+			logrus.WithField("userId", message.UserId).Error("failed to serialize message")
+		} else {
+			logrus.WithField("message", string(messageYaml)).Debug(text)
+		}
+	}
 }

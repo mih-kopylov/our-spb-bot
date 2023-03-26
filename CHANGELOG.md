@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Debug logging for polling and adding a message to queue
+
 ## [0.13.0] - 2023-03-25
 
 ### Added
