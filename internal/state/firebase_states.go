@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 const (
@@ -67,7 +68,9 @@ func (f *FirebaseStates) SetState(state *UserState) error {
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state: userId=%v", state.UserId)
 	} else {
-		logrus.WithField("userId", state.UserId).WithField("updateTime", wr.UpdateTime).Debug("user state saved")
+		logrus.WithField("userId", state.UserId).
+			WithField("updateTime", wr.UpdateTime.Format(time.RFC3339)).
+			Debug("user state saved")
 	}
 
 	return nil
