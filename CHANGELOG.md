@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.14.0] - 2023-03-27
+
 ### Added
 
-- Retry requests to portal 
+- Retry requests to portal
 
 ## [0.13.3] - 2023-03-27
 
@@ -70,7 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `/file_id` command to return photos file identifiers 
+- `/file_id` command to return photos file identifiers
 
 ## [0.11.0] - 2023-03-21
 
