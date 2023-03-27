@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Message fail description to contain root cause of the error
+
 ## [0.13.2] - 2023-03-26
 
 ### Fixed

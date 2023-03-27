@@ -94,7 +94,7 @@ func (s *MessageSender) sendNextMessage() {
 	request, err := s.spbClient.CreateSendProblemRequest(message.CategoryId, message.Text, message.Latitude, message.Longitude)
 	if err != nil {
 		logrus.Error(errorx.EnhanceStackTrace(err, "failed to create a request"))
-		s.returnMessage(message, StatusFailed, "failed to create a request")
+		s.returnMessage(message, StatusFailed, "failed to create a request: "+err.Error())
 		return
 	}
 
@@ -102,7 +102,7 @@ func (s *MessageSender) sendNextMessage() {
 	files, err := s.getFiles(message)
 	if err != nil {
 		logrus.Error(errorx.EnhanceStackTrace(err, "failed to get message files"))
-		s.returnMessage(message, StatusFailed, "failed to get messages files")
+		s.returnMessage(message, StatusFailed, "failed to get messages files "+err.Error())
 		return
 	}
 
@@ -129,7 +129,7 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 		err = s.states.SetState(userState)
 		if err != nil {
 			logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
-			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state")
+			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state: "+err.Error())
 		} else {
 			message.RetryAfter = time.Now()
 			s.returnMessageIncreaseTries(message, StatusCreated, "token expired")
@@ -148,7 +148,7 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 		err = s.states.SetState(userState)
 		if err != nil {
 			logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
-			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state")
+			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state: "+err.Error())
 		} else {
 			message.RetryAfter = nextTryTime
 			s.returnMessage(message, StatusCreated, "too many requests")
