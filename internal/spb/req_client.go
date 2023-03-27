@@ -50,6 +50,7 @@ func (r *ReqClient) GetNearestBuildings(latitude float64, longitude float64) (*N
 	request := r.client.R()
 	request.SetSuccessResult(&result)
 	request.SetErrorResult(&result)
+	r.configureRetries(request)
 	response, err := request.
 		SetQueryParam("latitude", fmt.Sprint(latitude)).
 		SetQueryParam("longitude", fmt.Sprint(longitude)).
@@ -71,6 +72,7 @@ func (r *ReqClient) GetReasons() ([]CityResponse, error) {
 	request := r.client.R()
 	request.SetSuccessResult(&result)
 	request.SetErrorResult(&result)
+	r.configureRetries(request)
 	response, err := request.Get("/api/v4.0/classifier")
 	if err != nil {
 		r.printDebugDump(response)
@@ -88,6 +90,7 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 	var errorResponse ErrorResponse
 	request := r.client.R()
 	request.SetErrorResult(&errorResponse)
+	r.configureRetries(request)
 	request.SetHeader("Authorization", "Bearer "+token)
 	request.SetFormData(fields)
 	for fileName, fileBytes := range files {
@@ -172,6 +175,7 @@ func (r *ReqClient) Login(login string, password string) (*TokenResponse, error)
 	)
 	request.SetSuccessResult(&result)
 	request.SetErrorResult(&responseError)
+	r.configureRetries(request)
 	response, err := request.Post("/api/v4.0/token/")
 	if err != nil {
 		r.printDebugDump(response)
@@ -183,6 +187,17 @@ func (r *ReqClient) Login(login string, password string) (*TokenResponse, error)
 	}
 
 	return &result, nil
+}
+
+func (r *ReqClient) configureRetries(request *req.Request) {
+	request.SetRetryCount(5)
+	request.AddRetryCondition(func(resp *req.Response, err error) bool {
+		return err != nil || resp.StatusCode >= 500
+	})
+	request.SetRetryFixedInterval(5 * time.Second)
+	request.AddRetryHook(func(resp *req.Response, err error) {
+		logrus.WithField("url", resp.Request.RawURL).Info("retry request")
+	})
 }
 
 func (r *ReqClient) printDebugDump(response *req.Response) {
