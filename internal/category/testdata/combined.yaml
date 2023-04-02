@@ -1,0 +1,7 @@
+Category 1:
+  id: 1
+  message: message 1
+Group 1:
+  Category 2:
+    id: 2
+    message: message 2
