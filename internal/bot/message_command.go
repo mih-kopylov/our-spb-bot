@@ -112,9 +112,19 @@ func (c *MessageCommand) createCateogoriesReplyMarkup(userState *state.UserState
 
 	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.CurrentCategoryNode)
 
-	for _, child := range currentCategoryNode.Children {
-		itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+SectionSeparator+child.Name)
-		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(itemButton))
+	buttonsPerRow := 2
+
+	for i := 0; i < len(currentCategoryNode.Children); i += buttonsPerRow {
+		var row []tgbotapi.InlineKeyboardButton
+		for j := 0; j < buttonsPerRow; j++ {
+			if i+j < len(currentCategoryNode.Children) {
+				child := currentCategoryNode.Children[i+j]
+				itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+SectionSeparator+child.Name)
+				row = append(row, itemButton)
+			}
+		}
+
+		result.InlineKeyboard = append(result.InlineKeyboard, row)
 	}
 
 	return result

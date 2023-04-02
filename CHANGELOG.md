@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Keep categories order equal to the configuration
+- Show two category buttons per row
 
 ## [0.15.0] - 2023-03-28
 
