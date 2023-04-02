@@ -34,7 +34,7 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
-	userState.CurrentCategoryNodeId = ""
+	userState.CurrentCategoryNode = ""
 	err = c.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
@@ -55,7 +55,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 	var markup tgbotapi.InlineKeyboardMarkup
 	var replyText string
 	var childFound *category.UserCategoryTreeNode
-	currentCategoryNode := c.cateogiresTree.FindNodeById(userState.CurrentCategoryNodeId)
+	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.CurrentCategoryNode)
 	if data == DataBack {
 		if currentCategoryNode.Parent == nil {
 			return errorx.AssertionFailed.New("can't go back more than a root")
@@ -63,7 +63,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 		childFound = currentCategoryNode.Parent
 	} else {
 		for _, child := range currentCategoryNode.Children {
-			if child.Id == data {
+			if child.Name == data {
 				childFound = child
 			}
 		}
@@ -73,7 +73,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 		replyText = "Не удалось найти выбранную категорию"
 		markup = tgbotapi.NewInlineKeyboardMarkup()
 	} else {
-		userState.CurrentCategoryNodeId = childFound.Id
+		userState.CurrentCategoryNode = childFound.Name
 
 		if childFound.Category == nil {
 			replyText = "Выберите категорию"
@@ -83,7 +83,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 Отправьте фотографии`, childFound.GetFullName())
 			markup = c.createCateogoriesReplyMarkup(userState)
 			userState.MessageText = childFound.Category.Message
-			userState.CurrentCategoryNodeId = childFound.Id
+			userState.CurrentCategoryNode = childFound.Name
 			userState.MessageHandlerName = MessageFormBeanId
 		}
 
@@ -105,15 +105,15 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 func (c *MessageCommand) createCateogoriesReplyMarkup(userState *state.UserState) tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
 
-	if userState.CurrentCategoryNodeId != "" {
+	if userState.CurrentCategoryNode != "" {
 		backButton := tgbotapi.NewInlineKeyboardButtonData("⬆ Вверх", MessageCommandName+SectionSeparator+DataBack)
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(backButton))
 	}
 
-	currentCategoryNode := c.cateogiresTree.FindNodeById(userState.CurrentCategoryNodeId)
+	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.CurrentCategoryNode)
 
 	for _, child := range currentCategoryNode.Children {
-		itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+SectionSeparator+child.Id)
+		itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+SectionSeparator+child.Name)
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(itemButton))
 	}
 

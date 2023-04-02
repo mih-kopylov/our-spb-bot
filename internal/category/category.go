@@ -4,9 +4,9 @@ import (
 	_ "embed"
 	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
-	"github.com/lithammer/shortuuid/v4"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
+	"strconv"
 	"strings"
 )
 
@@ -17,12 +17,15 @@ const (
 	BeanId = "Categories"
 )
 
+var (
+	Errors                 = errorx.NewNamespace("category")
+	ErrMalformedCategories = Errors.NewType("malformedCategories")
+)
+
 func RegisterBean() {
-	tree := lo.Must(createUserCategoryTree())
+	tree := lo.Must(createUserCategoryTree(categoriesText))
 	_ = lo.Must(di.RegisterBeanInstance(BeanId, tree))
 }
-
-type userCategories map[string]map[string]UserCategory
 
 type UserCategory struct {
 	Id      int64
@@ -30,12 +33,10 @@ type UserCategory struct {
 }
 
 type UserCategoryTreeNode struct {
-	Id       string
 	Name     string
-	Message  string
 	Category *UserCategory
-	Children []*UserCategoryTreeNode
 	Parent   *UserCategoryTreeNode
+	Children []*UserCategoryTreeNode
 }
 
 func (n *UserCategoryTreeNode) GetFullName() string {
@@ -52,12 +53,12 @@ func (n *UserCategoryTreeNode) GetFullName() string {
 	return strings.Join(names, " / ")
 }
 
-func (n *UserCategoryTreeNode) FindNodeById(id string) *UserCategoryTreeNode {
-	if n.Id == id {
+func (n *UserCategoryTreeNode) FindNodeByName(name string) *UserCategoryTreeNode {
+	if n.Name == name {
 		return n
 	}
 	for _, child := range n.Children {
-		result := child.FindNodeById(id)
+		result := child.FindNodeByName(name)
 		if result != nil {
 			return result
 		}
@@ -65,50 +66,96 @@ func (n *UserCategoryTreeNode) FindNodeById(id string) *UserCategoryTreeNode {
 	return nil
 }
 
-func getUserCategories() (userCategories, error) {
-	var result userCategories
-	err := yaml.Unmarshal(categoriesText, &result)
+func createUserCategoryTree(categoriesBytes []byte) (*UserCategoryTreeNode, error) {
+	var categoriesDocumentNode yaml.Node
+	err := yaml.Unmarshal(categoriesBytes, &categoriesDocumentNode)
 	if err != nil {
-		return nil, errorx.EnhanceStackTrace(err, "failed to unmarshall user categories file")
+		return nil, errorx.EnhanceStackTrace(err, "failed to unmarshall user categories")
 	}
 
-	return result, nil
-}
+	if categoriesDocumentNode.Kind != yaml.DocumentNode {
+		return nil, ErrMalformedCategories.New("root node is expected to be document but was %v, position:%v-%v", categoriesDocumentNode.Kind, categoriesDocumentNode.Line, categoriesDocumentNode.Column)
+	}
 
-func createUserCategoryTree() (*UserCategoryTreeNode, error) {
-	categories, err := getUserCategories()
+	if len(categoriesDocumentNode.Content) != 1 {
+		return nil, ErrMalformedCategories.New("a single element is expected in yaml document, but was %v, position:%v-%v", len(categoriesDocumentNode.Content), categoriesDocumentNode.Line, categoriesDocumentNode.Column)
+	}
+
+	categoriesNode := categoriesDocumentNode.Content[0]
+	if categoriesNode.Kind != yaml.MappingNode {
+		return nil, ErrMalformedCategories.New("type of yaml document is expected to be a mapping node, but was %v, position:%v-%v", categoriesNode.Kind, categoriesNode.Line, categoriesNode.Column)
+	}
+
+	rootNode := &UserCategoryTreeNode{
+		Name: "",
+	}
+
+	err = parseMapNode(categoriesNode, rootNode)
 	if err != nil {
 		return nil, err
 	}
 
-	rootNode := UserCategoryTreeNode{
-		Id:   "",
-		Name: "Корень",
+	return rootNode, nil
+}
+
+func parseMapNode(yamlMapNode *yaml.Node, treeNode *UserCategoryTreeNode) error {
+	if yamlMapNode.Kind != yaml.MappingNode {
+		return ErrMalformedCategories.New("map node expected, but was %v, position:%v-%v", yamlMapNode.Kind, yamlMapNode.Line, yamlMapNode.Column)
 	}
 
-	for groupName, group := range categories {
-		groupNode := UserCategoryTreeNode{
-			Id:       shortuuid.New(),
-			Name:     groupName,
-			Message:  "",
-			Category: nil,
-			Children: []*UserCategoryTreeNode{},
-			Parent:   &rootNode,
-		}
-		rootNode.Children = append(rootNode.Children, &groupNode)
-		for categoryName, userCategory := range group {
-			userCategory := userCategory
-			categoryNode := UserCategoryTreeNode{
-				Id:       shortuuid.New(),
-				Name:     categoryName,
-				Message:  userCategory.Message,
-				Category: &userCategory,
-				Children: nil,
-				Parent:   &groupNode,
-			}
-			groupNode.Children = append(groupNode.Children, &categoryNode)
-		}
+	if len(yamlMapNode.Content)%2 != 0 {
+		return ErrMalformedCategories.New("map node is expected to have even number of content elemenets, but was odd, position:%v-%v", yamlMapNode.Line, yamlMapNode.Column)
 	}
 
-	return &rootNode, nil
+	for index := 0; index < len(yamlMapNode.Content); index += 2 {
+		keyNode := yamlMapNode.Content[index]
+		if keyNode.Kind != yaml.ScalarNode {
+			return ErrMalformedCategories.New("key node is expected to be scalar, but was %v, position:%v-%v", keyNode.Kind, keyNode.Line, keyNode.Column)
+		}
+
+		valueNode := yamlMapNode.Content[index+1]
+		childNode, err := parseChildTreeNode(valueNode, keyNode.Value, treeNode)
+		if err != nil {
+			return err
+		}
+		treeNode.Children = append(treeNode.Children, childNode)
+	}
+
+	return nil
+}
+
+func parseChildTreeNode(yamlNode *yaml.Node, name string, parent *UserCategoryTreeNode) (*UserCategoryTreeNode, error) {
+	if yamlNode.Kind != yaml.MappingNode {
+		return nil, ErrMalformedCategories.New("map node expected, but was %v, position:%v-%v", yamlNode.Kind, yamlNode.Line, yamlNode.Column)
+	}
+
+	if len(yamlNode.Content) == 4 && yamlNode.Content[0].Value == "id" && yamlNode.Content[2].Value == "message" {
+		idString := yamlNode.Content[1].Value
+		id, err := strconv.ParseInt(idString, 10, 64)
+		if err != nil {
+			return nil, ErrMalformedCategories.Wrap(err, "failed to parse category id: %v", idString)
+		}
+
+		message := yamlNode.Content[3].Value
+
+		return &UserCategoryTreeNode{
+			Name:     name,
+			Category: &UserCategory{Id: id, Message: message},
+			Parent:   parent,
+			Children: nil,
+		}, nil
+	}
+
+	result := &UserCategoryTreeNode{
+		Name:     name,
+		Category: nil,
+		Parent:   parent,
+		Children: nil,
+	}
+	err := parseMapNode(yamlNode, result)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
 }

@@ -78,7 +78,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	}
 
 	if message.Location != nil {
-		categoryTreeNode := f.cateogiresTree.FindNodeById(userState.CurrentCategoryNodeId)
+		categoryTreeNode := f.cateogiresTree.FindNodeByName(userState.CurrentCategoryNode)
 		if categoryTreeNode == nil {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
@@ -132,7 +132,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 
 		userState.Files = nil
 		userState.MessageText = ""
-		userState.CurrentCategoryNodeId = ""
+		userState.CurrentCategoryNode = ""
 		userState.MessageHandlerName = ""
 
 		err = f.states.SetState(userState)
