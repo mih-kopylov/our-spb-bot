@@ -11,6 +11,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -37,13 +38,26 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 
 	if message.Text != "" {
 		userState.MessageText = message.Text
+
+		if strings.Contains(message.Text, "!") {
+			userState.MessagePriority = state.MessagePriorityHigh
+		} else {
+			userState.MessagePriority = state.MessagePriorityNormal
+		}
+
 		err := f.states.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 
+		replyText := "Текст сообщения заменён."
+
+		if userState.MessagePriority == state.MessagePriorityHigh {
+			replyText += "\nПриоритет повышен. Обращение будет отправлено в первую очередь"
+		}
+
 		return f.tgbot.SendMessageCustom(
-			message.Chat, "Текст сообщения заменён", func(reply *tgbotapi.MessageConfig) {
+			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
 			},
 		)
@@ -83,8 +97,14 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
 
+		createdAt := time.Now()
+		messageId := createdAt.Format("06-01-02") + "_" + shortuuid.New()
+		if userState.MessagePriority == state.MessagePriorityHigh {
+			messageId = "00_" + messageId
+		}
+
 		queueMessage := queue.Message{
-			Id:         shortuuid.New(),
+			Id:         messageId,
 			UserId:     userState.UserId,
 			CategoryId: categoryTreeNode.Category.Id,
 			Files:      userState.Files,
@@ -132,6 +152,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 
 		userState.Files = nil
 		userState.MessageText = ""
+		userState.MessagePriority = state.MessagePriorityNormal
 		userState.CurrentCategoryNode = ""
 		userState.MessageHandlerName = ""
 
