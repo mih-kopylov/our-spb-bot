@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- High message priority to send a message as soon as possible
+
 ### Changed
 
 - Login required to send a message

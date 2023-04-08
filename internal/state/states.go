@@ -16,17 +16,25 @@ var (
 	ErrRateLimited = StatesErrors.NewType("RateLimited")
 )
 
+type MessagePriority int
+
+const (
+	MessagePriorityNormal MessagePriority = iota
+	MessagePriorityHigh
+)
+
 type UserState struct {
-	UserId              int64     `firestore:"userId"`
-	UserName            string    `firestore:"userName"`
-	FullName            string    `firestore:"fullName"`
-	CurrentCategoryNode string    `firestore:"currentCategoryNode"`
-	MessageText         string    `firestore:"messageText"`
-	Files               []string  `firestore:"files"`
-	Login               string    `firestore:"login"`
-	Password            string    `firestore:"password"`
-	Token               string    `firestore:"token"`
-	RateLimitedUntil    time.Time `firestore:"rateLimitedUntil"`
-	MessageHandlerName  string    `firestore:"messageHandlerName"`
-	SentMessagesCount   int       `firestore:"sentMessagesCount"`
+	UserId              int64           `firestore:"userId"`
+	UserName            string          `firestore:"userName"`
+	FullName            string          `firestore:"fullName"`
+	CurrentCategoryNode string          `firestore:"currentCategoryNode"`
+	MessageText         string          `firestore:"messageText"`
+	MessagePriority     MessagePriority `firestore:"messagePriority"`
+	Files               []string        `firestore:"files"`
+	Login               string          `firestore:"login"`
+	Password            string          `firestore:"password"`
+	Token               string          `firestore:"token"`
+	RateLimitedUntil    time.Time       `firestore:"rateLimitedUntil"`
+	MessageHandlerName  string          `firestore:"messageHandlerName"`
+	SentMessagesCount   int             `firestore:"sentMessagesCount"`
 }

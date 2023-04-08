@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"reflect"
-	"strings"
 	"time"
 )
 
@@ -28,10 +27,6 @@ func RegisterQueueBean() {
 
 func (q *FirebaseQueue) Add(message *Message) error {
 	q.debugMessage(message, "adding message to queue")
-
-	if !strings.Contains(message.Id, "_") {
-		message.Id = message.CreatedAt.Format("06-01-02") + "_" + message.Id
-	}
 
 	_, err := q.fc.Collection(collection).Doc(message.Id).Create(context.Background(), message)
 	if err != nil {

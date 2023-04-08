@@ -88,7 +88,10 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 			markup = c.createCateogoriesReplyMarkup(userState)
 		} else {
 			replyText = fmt.Sprintf(`Выбранная категория: %v
-Отправьте фотографии`, childFound.GetFullName())
+Прикрепите фотографии.
+
+Для того, чтобы заменить текст по умолчанию, так же отправьте его в ответ.
+Если текст будет содержать "!", то сообщение будет отправлено с повышенным приоритетом, в первую очередь`, childFound.GetFullName())
 			markup = c.createCateogoriesReplyMarkup(userState)
 			userState.MessageText = childFound.Category.Message
 			userState.CurrentCategoryNode = childFound.Name
