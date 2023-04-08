@@ -34,6 +34,14 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
+	if userState.Login == "" {
+		return c.tgbot.SendMessage(message.Chat, `Вы не авторизованы на портале.
+
+Для того, чтобы отправить обращение, нужно авторизоваться на портале с логином и паролем. 
+
+Используйте команду /login для этого.`)
+	}
+
 	userState.CurrentCategoryNode = ""
 	err = c.states.SetState(userState)
 	if err != nil {
