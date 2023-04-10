@@ -37,13 +37,13 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	}
 
 	if message.Text != "" {
-		userState.MessageText = message.Text
+		userState.SetFormField(state.FormFieldMessageText, message.Text)
 
+		messagePriority := state.MessagePriorityNormal
 		if strings.Contains(message.Text, "!") {
-			userState.MessagePriority = state.MessagePriorityHigh
-		} else {
-			userState.MessagePriority = state.MessagePriorityNormal
+			messagePriority = state.MessagePriorityHigh
 		}
+		userState.SetFormField(state.FormFieldMessagePriority, messagePriority)
 
 		err := f.states.SetState(userState)
 		if err != nil {
@@ -52,7 +52,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 
 		replyText := "Текст сообщения заменён."
 
-		if userState.MessagePriority == state.MessagePriorityHigh {
+		if userState.GetIntFormField(state.FormFieldMessagePriority) == state.MessagePriorityHigh {
 			replyText += "\nПриоритет повышен. Обращение будет отправлено в первую очередь"
 		}
 
@@ -70,7 +70,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			},
 		)
 
-		userState.Files = append(userState.Files, maxPhotoSize.FileID)
+		userState.AddValueToStringSlice(state.FormFieldFiles, maxPhotoSize.FileID)
 		err = f.states.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
@@ -92,14 +92,14 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	}
 
 	if message.Location != nil {
-		categoryTreeNode := f.cateogiresTree.FindNodeByName(userState.CurrentCategoryNode)
+		categoryTreeNode := f.cateogiresTree.FindNodeByName(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 		if categoryTreeNode == nil {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
 
 		createdAt := time.Now()
 		messageId := createdAt.Format("06-01-02") + "_" + shortuuid.New()
-		if userState.MessagePriority == state.MessagePriorityHigh {
+		if userState.GetIntFormField(state.FormFieldMessagePriority) == state.MessagePriorityHigh {
 			messageId = "00_" + messageId
 		}
 
@@ -107,8 +107,8 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			Id:         messageId,
 			UserId:     userState.UserId,
 			CategoryId: categoryTreeNode.Category.Id,
-			Files:      userState.Files,
-			Text:       userState.MessageText,
+			Files:      userState.GetStringSlice(state.FormFieldFiles),
+			Text:       userState.GetStringFormField(state.FormFieldMessageText),
 			Longitude:  message.Location.Longitude,
 			Latitude:   message.Location.Latitude,
 			CreatedAt:  time.Now(),
@@ -150,10 +150,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return err
 		}
 
-		userState.Files = nil
-		userState.MessageText = ""
-		userState.MessagePriority = state.MessagePriorityNormal
-		userState.CurrentCategoryNode = ""
+		userState.ClearForm()
 		userState.MessageHandlerName = ""
 
 		err = f.states.SetState(userState)

@@ -13,10 +13,10 @@ type Client interface {
 }
 
 var (
-	OurSpbHttpErrors              = errorx.NewNamespace("OurSpbHttp")
-	ErrTooManyRequests            = OurSpbHttpErrors.NewType("TooManyRequests")
-	ErrBadRequest                 = OurSpbHttpErrors.NewType("BadRequest")
-	ErrFailedRequest              = OurSpbHttpErrors.NewType("FailedRequest")
-	ErrUnauthorized               = OurSpbHttpErrors.NewType("Unauthorized")
-	ErrExpectingNotBuildingCoords = OurSpbHttpErrors.NewType("ExpectingNotBuildingCoords")
+	Errors                        = errorx.NewNamespace("OurSpbHttp")
+	ErrTooManyRequests            = Errors.NewType("TooManyRequests")
+	ErrBadRequest                 = Errors.NewType("BadRequest")
+	ErrFailedRequest              = Errors.NewType("FailedRequest")
+	ErrUnauthorized               = Errors.NewType("Unauthorized")
+	ErrExpectingNotBuildingCoords = Errors.NewType("ExpectingNotBuildingCoords")
 )

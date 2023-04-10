@@ -56,6 +56,21 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 		return nil, errorx.EnhanceStackTrace(err, "failed to deserialize user state data: userId=%v", userId)
 	}
 
+	if state.Login != "" {
+		_, exists := lo.Find(state.Accounts, func(item Account) bool {
+			return item.Login == state.Login
+		})
+		if !exists {
+			state.Accounts = []Account{{
+				Login:            state.Login,
+				Password:         state.Password,
+				Token:            state.Token,
+				RateLimitedUntil: time.Now(),
+				State:            AccountStateEnabled,
+			}}
+		}
+	}
+
 	f.debugUserState(&state, "read user state")
 
 	return &state, nil
