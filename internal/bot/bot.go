@@ -21,6 +21,11 @@ const (
 	SectionSeparator = "."
 )
 
+var (
+	Errors                   = errorx.NewNamespace("Bot")
+	ErrFailedToDeleteMessage = Errors.NewType("FailedToDeleteMessage")
+)
+
 func RegisterBotBean() {
 	_ = lo.Must(di.RegisterBean(TgBotBeanId, reflect.TypeOf((*TgBot)(nil))))
 
@@ -153,6 +158,20 @@ func (b *TgBot) handleMessage(message *tgbotapi.Message) error {
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to handle message")
 		}
+	}
+
+	return nil
+}
+
+func (b *TgBot) DeleteMessage(message *tgbotapi.Message) error {
+	deleteMessage := tgbotapi.NewDeleteMessage(message.Chat.ID, message.MessageID)
+	resp, err := b.api.Request(deleteMessage)
+	if err != nil {
+		return errorx.EnhanceStackTrace(err, "failed to delete message: chat=%v, message=%v", message.Chat.ID, message.MessageID)
+	}
+
+	if !resp.Ok {
+		return ErrFailedToDeleteMessage.New("resp=%v", resp)
 	}
 
 	return nil

@@ -12,29 +12,143 @@ type States interface {
 }
 
 var (
-	StatesErrors   = errorx.NewNamespace("States")
-	ErrRateLimited = StatesErrors.NewType("RateLimited")
+	Errors         = errorx.NewNamespace("States")
+	ErrRateLimited = Errors.NewType("RateLimited")
 )
 
-type MessagePriority int
-
 const (
-	MessagePriorityNormal MessagePriority = iota
+	MessagePriorityNormal int = iota
 	MessagePriorityHigh
 )
 
+type FormField string
+
+const (
+	FormFieldLogin               FormField = "login"
+	FormFieldCurrentCategoryNode FormField = "currentCategoryNode"
+	FormFieldMessageText         FormField = "messageText"
+	FormFieldMessagePriority     FormField = "messagePriority"
+	FormFieldFiles               FormField = "files"
+)
+
 type UserState struct {
-	UserId              int64           `firestore:"userId"`
-	UserName            string          `firestore:"userName"`
-	FullName            string          `firestore:"fullName"`
-	CurrentCategoryNode string          `firestore:"currentCategoryNode"`
-	MessageText         string          `firestore:"messageText"`
-	MessagePriority     MessagePriority `firestore:"messagePriority"`
-	Files               []string        `firestore:"files"`
-	Login               string          `firestore:"login"`
-	Password            string          `firestore:"password"`
-	Token               string          `firestore:"token"`
-	RateLimitedUntil    time.Time       `firestore:"rateLimitedUntil"`
-	MessageHandlerName  string          `firestore:"messageHandlerName"`
-	SentMessagesCount   int             `firestore:"sentMessagesCount"`
+	UserId              int64     `firestore:"userId"`
+	UserName            string    `firestore:"userName"`
+	FullName            string    `firestore:"fullName"`
+	CurrentCategoryNode string    `firestore:"currentCategoryNode"`
+	MessageText         string    `firestore:"messageText"`
+	MessagePriority     int       `firestore:"messagePriority"`
+	Files               []string  `firestore:"files"`
+	Accounts            []Account `firestore:"accounts"`
+	// Deprecated
+	Login string `firestore:"login"`
+	// Deprecated
+	Password string `firestore:"password"`
+	// Deprecated
+	Token              string         `firestore:"token"`
+	MessageHandlerName string         `firestore:"messageHandlerName"`
+	SentMessagesCount  int            `firestore:"sentMessagesCount"`
+	Form               map[string]any `firestore:"form"`
+}
+
+func (s *UserState) ClearForm() {
+	s.Form = nil
+}
+
+func (s *UserState) SetFormField(key FormField, value any) {
+	if s.Form == nil {
+		s.Form = map[string]any{}
+	}
+
+	s.Form[string(key)] = value
+}
+
+func (s *UserState) GetStringFormField(key FormField) string {
+	if s.Form == nil {
+		return ""
+	}
+
+	value, exists := s.Form[string(key)]
+	if !exists {
+		return ""
+	}
+
+	stringValue, ok := value.(string)
+	if !ok {
+		return ""
+	}
+
+	return stringValue
+}
+
+func (s *UserState) GetIntFormField(key FormField) int {
+	if s.Form == nil {
+		return 0
+	}
+
+	value, exists := s.Form[string(key)]
+	if !exists {
+		return 0
+	}
+
+	intValue, ok := value.(int)
+	if !ok {
+		return 0
+	}
+
+	return intValue
+}
+
+func (s *UserState) GetStringSlice(key FormField) []string {
+	if s.Form == nil {
+		return nil
+	}
+
+	value, exists := s.Form[string(key)]
+	if !exists {
+		return nil
+	}
+
+	slice, ok := value.([]string)
+	if !ok {
+		return nil
+	}
+
+	return slice
+}
+
+func (s *UserState) AddValueToStringSlice(key FormField, value string) {
+	if s.Form == nil {
+		s.Form = map[string]any{}
+	}
+
+	storedValue, exists := s.Form[string(key)]
+	if !exists {
+		storedValue = []string{}
+		s.Form[string(key)] = storedValue
+	}
+
+	slice, ok := storedValue.([]string)
+	if !ok {
+		slice = []string{}
+	}
+
+	slice = append(slice, value)
+
+	s.Form[string(key)] = slice
+}
+
+type AccountState string
+
+const (
+	AccountStateEnabled  AccountState = "enabled"
+	AccountStateDisabled AccountState = "disabled"
+)
+
+type Account struct {
+	Login            string       `firestore:"login"`
+	Password         string       `firestore:"password"`
+	Token            string       `firestore:"token"`
+	RateLimitedUntil time.Time    `firestore:"rateLimitedUntil"`
+	State            AccountState `firestore:"state"`
 }

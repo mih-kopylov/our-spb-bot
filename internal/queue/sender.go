@@ -33,6 +33,13 @@ var (
 	sleepDuration time.Duration
 )
 
+var (
+	Errors                    = errorx.NewNamespace("Sender")
+	ErrNoAccounts             = Errors.NewType("NoAccounts")
+	ErrAllAccountsDisabled    = Errors.NewType("AllAccountsDisabled")
+	ErrAllAccountsRateLimited = Errors.NewType("AllAccountsRateLimited")
+)
+
 func RegisterSenderBean(conf *config.Config) {
 	sleepDuration = conf.SleepDuration
 	_ = lo.Must(di.RegisterBean(SenderBeanId, reflect.TypeOf((*MessageSender)(nil))))
@@ -73,21 +80,19 @@ func (s *MessageSender) sendNextMessage() {
 		return
 	}
 
-	if userState.Token == "" {
-		logrus.WithField("id", message.Id).Debug("no token found")
-		err = s.tryReauthorize(userState, message)
-		if err != nil {
-			logrus.WithField("id", message.Id).Error(err)
+	account, err := s.chooseAccount(userState, message)
+	if err != nil {
+		if errorx.IsOfType(err, ErrNoAccounts) || errorx.IsOfType(err, ErrAllAccountsDisabled) {
+			logrus.Error(errorx.EnhanceStackTrace(err, "failed to choose an account"))
+			s.returnMessage(message, StatusFailed, "no authorized accounts found")
 			return
 		}
-	}
-
-	if userState.RateLimitedUntil.After(time.Now()) {
-		logrus.WithField("id", message.Id).
-			Info("user is rate limited until " + userState.RateLimitedUntil.Format(time.RFC3339))
-		message.RetryAfter = userState.RateLimitedUntil
-		s.returnMessage(message, StatusCreated, "user is rate limited")
-		return
+		if errorx.IsOfType(err, ErrAllAccountsRateLimited) {
+			logrus.WithField("id", message.Id).Info("user is rate limited")
+			message.RetryAfter = userState.Accounts[0].RateLimitedUntil
+			s.returnMessage(message, StatusCreated, "user is rate limited")
+			return
+		}
 	}
 
 	logrus.WithField("id", message.Id).Debug("creating a request")
@@ -107,10 +112,10 @@ func (s *MessageSender) sendNextMessage() {
 	}
 
 	logrus.WithField("id", message.Id).Debug("sending message")
-	err = s.spbClient.Send(userState.Token, request, files)
+	err = s.spbClient.Send(account.Token, request, files)
 	if err != nil {
 		logrus.WithField("id", message.Id).Warn(errorx.EnhanceStackTrace(err, "failed to send message"))
-		s.handleMessageSendingError(err, userState, message)
+		s.handleMessageSendingError(err, userState, account, message)
 		return
 	}
 
@@ -123,9 +128,9 @@ func (s *MessageSender) sendNextMessage() {
 	logrus.WithField("id", message.Id).Debug("message sent")
 }
 
-func (s *MessageSender) handleMessageSendingError(err error, userState *state.UserState, message *Message) {
+func (s *MessageSender) handleMessageSendingError(err error, userState *state.UserState, account *state.Account, message *Message) {
 	if errorx.IsOfType(err, spb.ErrUnauthorized) {
-		userState.Token = ""
+		account.Token = ""
 		err = s.states.SetState(userState)
 		if err != nil {
 			logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
@@ -137,14 +142,14 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 	} else if errorx.IsOfType(err, spb.ErrExpectingNotBuildingCoords) {
 		message.RetryAfter = time.Now()
 		message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
-		s.returnMessageIncreaseTries(message, StatusCreated, "service expects not building coordinates")
+		s.returnMessageIncreaseTries(message, StatusCreated, "service expects coordinates outside a building")
 	} else if errorx.IsOfType(err, spb.ErrBadRequest) {
 		s.returnMessageIncreaseTries(message, StatusFailed, err.Error())
 	} else if errorx.IsOfType(err, spb.ErrTooManyRequests) {
 		year, month, day := time.Now().In(spbLocation).AddDate(0, 0, 1).Date()
 		nextTryTime := time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
 
-		userState.RateLimitedUntil = nextTryTime
+		account.RateLimitedUntil = nextTryTime
 		err = s.states.SetState(userState)
 		if err != nil {
 			logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
@@ -158,32 +163,37 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 	}
 }
 
-func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message) error {
-	if userState.Login == "" {
-		s.returnMessage(message, StatusFailed, "user not authorized")
+func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message, account *state.Account) error {
+	if account.Login == "" {
+		account.State = state.AccountStateDisabled
+		err := s.states.SetState(userState)
+		if err != nil {
+			return errorx.EnhanceStackTrace(err, "failed to set user state")
+		}
+
 		return errorx.IllegalState.New("user not authorized")
 	}
 
-	logrus.WithField("id", message.Id).Info("refreshing token")
-	tokenResponse, err := s.spbClient.Login(userState.Login, userState.Password)
+	logrus.WithField("id", message.Id).
+		WithField("login", account.Login).
+		Info("refreshing token")
+	tokenResponse, err := s.spbClient.Login(account.Login, account.Password)
 	if err != nil {
-		userState.Login = ""
-		userState.Password = ""
+		account.Login = ""
+		account.Password = ""
+		account.State = state.AccountStateDisabled
 		err2 := s.states.SetState(userState)
 		if err2 != nil {
-			s.returnMessage(message, StatusFailed, "failed to set user state")
 			return errorx.EnhanceStackTrace(err2, "failed to set user state")
 		}
 
-		s.returnMessage(message, StatusFailed, "failed to reauthorize")
 		return errorx.EnhanceStackTrace(err, "failed to reauthorize")
 	}
 
 	logrus.WithField("id", message.Id).Info("new token obtained")
-	userState.Token = tokenResponse.AccessToken
+	account.Token = tokenResponse.AccessToken
 	err = s.states.SetState(userState)
 	if err != nil {
-		s.returnMessage(message, StatusFailed, "failed to set user state")
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
@@ -246,4 +256,40 @@ func (s *MessageSender) shiftLongitudeMeters(latitude float64, longitude float64
 	oneMeter := (1 / ((2 * math.Pi / 360) * earthRadius)) / 1000 //1 meter in degrees
 
 	return longitude - (metersFloat*oneMeter)/math.Cos(latitude*(math.Pi/180))
+}
+
+func (s *MessageSender) chooseAccount(userState *state.UserState, message *Message) (*state.Account, error) {
+	if len(userState.Accounts) == 0 {
+		return nil, ErrNoAccounts.New("no accounts found")
+	}
+
+	if len(lo.Filter(userState.Accounts, func(item state.Account, index int) bool {
+		return item.State == state.AccountStateEnabled
+	})) == 0 {
+		return nil, ErrAllAccountsDisabled.New("all accounts disabled")
+	}
+
+	for i, account := range userState.Accounts {
+		if account.State == state.AccountStateDisabled {
+			continue
+		}
+
+		if account.RateLimitedUntil.After(time.Now()) {
+			continue
+		}
+
+		if account.Token == "" {
+			err := s.tryReauthorize(userState, message, &account)
+			if err != nil {
+				logrus.WithField("id", message.Id).
+					WithField("login", account.Login).
+					Warn("failed to authorize with account")
+				continue
+			}
+		}
+
+		return &userState.Accounts[i], nil
+	}
+
+	return nil, ErrAllAccountsRateLimited.New("all accounts are rate limited")
 }

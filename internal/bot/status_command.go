@@ -7,6 +7,8 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"github.com/samber/lo"
+	"strings"
 	"time"
 )
 
@@ -48,24 +50,25 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to count messages in the queue")
 	}
 
-	var authorizedInPortal string
-	if userState.Token == "" {
-		authorizedInPortal = "нет"
+	var accounts string
+	if len(userState.Accounts) == 0 {
+		accounts = "нет"
 	} else {
-		authorizedInPortal = userState.Login
-	}
-
-	var rateLimited string
-	if userState.RateLimitedUntil.After(time.Now()) {
-		rateLimited = "до " + userState.RateLimitedUntil.Format(time.RFC3339)
-	} else {
-		rateLimited = "нет"
+		accounts = strings.Join(lo.Map(userState.Accounts, func(item state.Account, index int) string {
+			result := "  " + item.Login
+			if item.RateLimitedUntil.After(time.Now()) {
+				result += " - заблокирован до " + item.RateLimitedUntil.Format(time.RFC3339)
+			} else {
+				result += " - готов к отправке обращений"
+			}
+			return result
+		}), "\n")
 	}
 
 	reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
 Пользователь: @%v
-Авторизован: %v
-Заблокирован: %v
+Аккаунты:
+%v
 Сообщений отправлено: %v
 Ожидает отправки: %v
 Не удалось отправить: %v
@@ -74,8 +77,7 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 /message - отправить новое обращение 
 `,
 		message.Chat.UserName,
-		authorizedInPortal,
-		rateLimited,
+		accounts,
 		userState.SentMessagesCount,
 		messagesCount[queue.StatusCreated],
 		messagesCount[queue.StatusFailed],

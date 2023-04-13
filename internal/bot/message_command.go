@@ -34,7 +34,7 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
-	if userState.Login == "" {
+	if len(userState.Accounts) == 0 {
 		return c.tgbot.SendMessage(message.Chat, `Вы не авторизованы на портале.
 
 Для того, чтобы отправить обращение, нужно авторизоваться на портале с логином и паролем. 
@@ -42,7 +42,7 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 Используйте команду /login для этого.`)
 	}
 
-	userState.CurrentCategoryNode = ""
+	userState.ClearForm()
 	err = c.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
@@ -63,7 +63,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 	var markup tgbotapi.InlineKeyboardMarkup
 	var replyText string
 	var childFound *category.UserCategoryTreeNode
-	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.CurrentCategoryNode)
+	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 	if data == DataBack {
 		if currentCategoryNode.Parent == nil {
 			return errorx.AssertionFailed.New("can't go back more than a root")
@@ -81,7 +81,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 		replyText = "Не удалось найти выбранную категорию"
 		markup = tgbotapi.NewInlineKeyboardMarkup()
 	} else {
-		userState.CurrentCategoryNode = childFound.Name
+		userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Name)
 
 		if childFound.Category == nil {
 			replyText = "Выберите категорию"
@@ -93,8 +93,8 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 Для того, чтобы заменить текст по умолчанию, так же отправьте его в ответ.
 Если текст будет содержать "!", то сообщение будет отправлено с повышенным приоритетом, в первую очередь`, childFound.GetFullName())
 			markup = c.createCateogoriesReplyMarkup(userState)
-			userState.MessageText = childFound.Category.Message
-			userState.CurrentCategoryNode = childFound.Name
+			userState.SetFormField(state.FormFieldMessageText, childFound.Category.Message)
+			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Name)
 			userState.MessageHandlerName = MessageFormBeanId
 		}
 
@@ -116,12 +116,12 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 func (c *MessageCommand) createCateogoriesReplyMarkup(userState *state.UserState) tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
 
-	if userState.CurrentCategoryNode != "" {
+	if userState.GetStringFormField(state.FormFieldCurrentCategoryNode) != "" {
 		backButton := tgbotapi.NewInlineKeyboardButtonData("⬆ Вверх", MessageCommandName+SectionSeparator+DataBack)
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(backButton))
 	}
 
-	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.CurrentCategoryNode)
+	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 
 	buttonsPerRow := 2
 

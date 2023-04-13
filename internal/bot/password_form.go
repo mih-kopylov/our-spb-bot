@@ -9,6 +9,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
 	"reflect"
+	"time"
 )
 
 const (
@@ -32,17 +33,28 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
-	if message.Text == "" {
+	password := message.Text
+	if password == "" {
 		return f.tgbot.SendMessage(message.Chat, "Введите пароль")
 	}
 
-	userState.Password = message.Text
-	userState.MessageHandlerName = ""
-
-	tokenResponse, err := f.spbClient.Login(userState.Login, userState.Password)
+	err = f.tgbot.DeleteMessage(message)
 	if err != nil {
-		userState.Login = ""
-		userState.Password = ""
+		return err
+	}
+
+	login := userState.GetStringFormField(state.FormFieldLogin)
+	if login == "" {
+		return f.tgbot.SendMessage(message.Chat, `Логин, сохранённый на предыдущем шаге, не найден.
+
+Введите команду /login для авторизации.`)
+	}
+
+	userState.MessageHandlerName = ""
+	userState.ClearForm()
+
+	tokenResponse, err := f.spbClient.Login(login, password)
+	if err != nil {
 		err = f.states.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
@@ -50,10 +62,17 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 
 		return f.tgbot.SendMessage(message.Chat, `Не удалось авторизоваться.
 
-Введите команду /login, чтобы залогиниться снова`)
+Введите команду /login для авторизации.`)
 	}
 
-	userState.Token = tokenResponse.AccessToken
+	userState.Accounts = append(userState.Accounts, state.Account{
+		Login:            login,
+		Password:         password,
+		Token:            tokenResponse.AccessToken,
+		RateLimitedUntil: time.Time{},
+		State: state.AccountStateEnabled,
+	})
+
 	err = f.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
@@ -66,5 +85,5 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 
 	return f.tgbot.SendMessage(message.Chat, `Авторизация прошла успешно. Учётные данные сохранены.
 
-Введите команду /message для отправки обращения`)
+Введите команду /message для отправки обращения.`)
 }

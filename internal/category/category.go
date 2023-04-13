@@ -18,8 +18,8 @@ const (
 )
 
 var (
-	Errors                 = errorx.NewNamespace("category")
-	ErrMalformedCategories = Errors.NewType("malformedCategories")
+	Errors                 = errorx.NewNamespace("Category")
+	ErrMalformedCategories = Errors.NewType("MalformedCategories")
 )
 
 func RegisterBean() {
