@@ -3,6 +3,7 @@ package state
 import (
 	"github.com/joomcode/errorx"
 	"github.com/sirupsen/logrus"
+	"reflect"
 	"time"
 )
 
@@ -98,6 +99,19 @@ func (s *UserState) GetStringSlice(key FormField) []string {
 	value, exists := s.Form[string(key)]
 	if !exists {
 		return nil
+	}
+
+	typeOfValue := reflect.TypeOf(value)
+	if typeOfValue.Kind() == reflect.Slice && typeOfValue.Elem().Kind() == reflect.String {
+		valueStringSlice, ok := value.([]string)
+		if !ok {
+			logrus.WithField("userId", s.UserId).
+				WithField("key", key).
+				Warn("failed to convert value to string array")
+			return nil
+		}
+
+		return valueStringSlice
 	}
 
 	valueArray, ok := value.([]any)
