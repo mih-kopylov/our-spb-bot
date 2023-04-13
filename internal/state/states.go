@@ -32,20 +32,10 @@ const (
 )
 
 type UserState struct {
-	UserId              int64     `firestore:"userId"`
-	UserName            string    `firestore:"userName"`
-	FullName            string    `firestore:"fullName"`
-	CurrentCategoryNode string    `firestore:"currentCategoryNode"`
-	MessageText         string    `firestore:"messageText"`
-	MessagePriority     int       `firestore:"messagePriority"`
-	Files               []string  `firestore:"files"`
-	Accounts            []Account `firestore:"accounts"`
-	// Deprecated
-	Login string `firestore:"login"`
-	// Deprecated
-	Password string `firestore:"password"`
-	// Deprecated
-	Token              string         `firestore:"token"`
+	UserId             int64          `firestore:"userId"`
+	UserName           string         `firestore:"userName"`
+	FullName           string         `firestore:"fullName"`
+	Accounts           []Account      `firestore:"accounts"`
 	MessageHandlerName string         `firestore:"messageHandlerName"`
 	SentMessagesCount  int            `firestore:"sentMessagesCount"`
 	Form               map[string]any `firestore:"form"`
