@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Unused deprecated user state fields
 
+### Fixed
+
+- String array field reading from state form
+
 ## [0.18.0] - 2023-04-13
 
 ### Added

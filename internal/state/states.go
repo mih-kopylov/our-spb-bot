@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/joomcode/errorx"
+	"github.com/sirupsen/logrus"
 	"time"
 )
 
@@ -99,12 +100,28 @@ func (s *UserState) GetStringSlice(key FormField) []string {
 		return nil
 	}
 
-	slice, ok := value.([]string)
+	valueArray, ok := value.([]any)
 	if !ok {
+		logrus.WithField("userId", s.UserId).
+			WithField("key", key).
+			Warn("failed to convert value to array")
 		return nil
 	}
 
-	return slice
+	var sliceStrings []string
+	for _, item := range valueArray {
+		itemString, ok := item.(string)
+		if !ok {
+			logrus.WithField("userId", s.UserId).
+				WithField("key", key).
+				WithField("item", item).
+				Warn("failed to convert array value item to string")
+		} else {
+			sliceStrings = append(sliceStrings, itemString)
+		}
+	}
+
+	return sliceStrings
 }
 
 func (s *UserState) AddValueToStringSlice(key FormField, value string) {
