@@ -18,18 +18,12 @@ var (
 	ErrRateLimited = Errors.NewType("RateLimited")
 )
 
-const (
-	MessagePriorityNormal int = iota
-	MessagePriorityHigh
-)
-
 type FormField string
 
 const (
 	FormFieldLogin               FormField = "login"
 	FormFieldCurrentCategoryNode FormField = "currentCategoryNode"
 	FormFieldMessageText         FormField = "messageText"
-	FormFieldMessagePriority     FormField = "messagePriority"
 	FormFieldFiles               FormField = "files"
 )
 
