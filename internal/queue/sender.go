@@ -279,7 +279,7 @@ func (s *MessageSender) chooseAccount(userState *state.UserState, message *Messa
 		}
 
 		if account.Token == "" {
-			err := s.tryReauthorize(userState, message, &account)
+			err := s.tryReauthorize(userState, message, &userState.Accounts[i])
 			if err != nil {
 				logrus.WithField("id", message.Id).
 					WithField("login", account.Login).

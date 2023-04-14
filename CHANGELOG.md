@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Saving reauthorized account token in the state
+
 ## [0.18.1] - 2023-04-13
 
 ### Removed
