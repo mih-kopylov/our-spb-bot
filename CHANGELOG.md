@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Setting message priority
+- Choosing parent cateogory when creating a message
 
 ## [0.18.2] - 2023-04-14
 

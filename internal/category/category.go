@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
+	"github.com/lithammer/shortuuid/v4"
 	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 	"strconv"
@@ -33,6 +34,7 @@ type UserCategory struct {
 }
 
 type UserCategoryTreeNode struct {
+	Id       string
 	Name     string
 	Category *UserCategory
 	Parent   *UserCategoryTreeNode
@@ -53,12 +55,12 @@ func (n *UserCategoryTreeNode) GetFullName() string {
 	return strings.Join(names, " / ")
 }
 
-func (n *UserCategoryTreeNode) FindNodeByName(name string) *UserCategoryTreeNode {
-	if n.Name == name {
+func (n *UserCategoryTreeNode) FindNodeById(id string) *UserCategoryTreeNode {
+	if n.Id == id {
 		return n
 	}
 	for _, child := range n.Children {
-		result := child.FindNodeByName(name)
+		result := child.FindNodeById(id)
 		if result != nil {
 			return result
 		}
@@ -139,6 +141,7 @@ func parseChildTreeNode(yamlNode *yaml.Node, name string, parent *UserCategoryTr
 		message := yamlNode.Content[3].Value
 
 		return &UserCategoryTreeNode{
+			Id:       shortuuid.New(),
 			Name:     name,
 			Category: &UserCategory{Id: id, Message: message},
 			Parent:   parent,
@@ -147,6 +150,7 @@ func parseChildTreeNode(yamlNode *yaml.Node, name string, parent *UserCategoryTr
 	}
 
 	result := &UserCategoryTreeNode{
+		Id:       shortuuid.New(),
 		Name:     name,
 		Category: nil,
 		Parent:   parent,

@@ -81,7 +81,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	}
 
 	if message.Location != nil {
-		categoryTreeNode := f.cateogiresTree.FindNodeByName(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
+		categoryTreeNode := f.cateogiresTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 		if categoryTreeNode == nil {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
