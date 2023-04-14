@@ -39,23 +39,12 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 	if message.Text != "" {
 		userState.SetFormField(state.FormFieldMessageText, message.Text)
 
-		messagePriority := state.MessagePriorityNormal
-		if strings.Contains(message.Text, "!") {
-			messagePriority = state.MessagePriorityHigh
-		}
-		userState.SetFormField(state.FormFieldMessagePriority, messagePriority)
-
-		err := f.states.SetState(userState)
+		err = f.states.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 
 		replyText := "Текст сообщения заменён."
-
-		if userState.GetIntFormField(state.FormFieldMessagePriority) == state.MessagePriorityHigh {
-			replyText += "\nПриоритет повышен. Обращение будет отправлено в первую очередь"
-		}
-
 		return f.tgbot.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
@@ -99,7 +88,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 
 		createdAt := time.Now()
 		messageId := createdAt.Format("06-01-02") + "_" + shortuuid.New()
-		if userState.GetIntFormField(state.FormFieldMessagePriority) == state.MessagePriorityHigh {
+		if strings.Contains(message.Text, "!") {
 			messageId = "00_" + messageId
 		}
 

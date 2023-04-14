@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Setting message priority
+
 ## [0.18.2] - 2023-04-14
 
 ### Fixed
