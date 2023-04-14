@@ -63,7 +63,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 	var markup tgbotapi.InlineKeyboardMarkup
 	var replyText string
 	var childFound *category.UserCategoryTreeNode
-	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
+	currentCategoryNode := c.cateogiresTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 	if data == DataBack {
 		if currentCategoryNode.Parent == nil {
 			return errorx.AssertionFailed.New("can't go back more than a root")
@@ -81,7 +81,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 		replyText = "Не удалось найти выбранную категорию"
 		markup = tgbotapi.NewInlineKeyboardMarkup()
 	} else {
-		userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Name)
+		userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id)
 
 		if childFound.Category == nil {
 			replyText = "Выберите категорию"
@@ -94,7 +94,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 Если текст будет содержать "!", то сообщение будет отправлено с повышенным приоритетом, в первую очередь`, childFound.GetFullName())
 			markup = c.createCateogoriesReplyMarkup(userState)
 			userState.SetFormField(state.FormFieldMessageText, childFound.Category.Message)
-			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Name)
+			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id)
 			userState.MessageHandlerName = MessageFormBeanId
 		}
 
@@ -121,7 +121,7 @@ func (c *MessageCommand) createCateogoriesReplyMarkup(userState *state.UserState
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(backButton))
 	}
 
-	currentCategoryNode := c.cateogiresTree.FindNodeByName(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
+	currentCategoryNode := c.cateogiresTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 
 	buttonsPerRow := 2
 
@@ -130,7 +130,7 @@ func (c *MessageCommand) createCateogoriesReplyMarkup(userState *state.UserState
 		for j := 0; j < buttonsPerRow; j++ {
 			if i+j < len(currentCategoryNode.Children) {
 				child := currentCategoryNode.Children[i+j]
-				itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+SectionSeparator+child.Name)
+				itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+SectionSeparator+child.Id)
 				row = append(row, itemButton)
 			}
 		}
