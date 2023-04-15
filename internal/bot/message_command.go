@@ -7,6 +7,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"strings"
 )
 
 const (
@@ -71,7 +72,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 		childFound = currentCategoryNode.Parent
 	} else {
 		for _, child := range currentCategoryNode.Children {
-			if child.Name == data {
+			if child.Id == data {
 				childFound = child
 			}
 		}
@@ -80,11 +81,12 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 	if childFound == nil {
 		replyText = "Не удалось найти выбранную категорию"
 		markup = tgbotapi.NewInlineKeyboardMarkup()
+		markup.InlineKeyboard = [][]tgbotapi.InlineKeyboardButton{}
 	} else {
 		userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id)
 
 		if childFound.Category == nil {
-			replyText = "Выберите категорию"
+			replyText = strings.TrimSpace(fmt.Sprintf("Выберите категорию\n%v", childFound.GetFullName()))
 			markup = c.createCateogoriesReplyMarkup(userState)
 		} else {
 			replyText = fmt.Sprintf(`Выбранная категория: %v
