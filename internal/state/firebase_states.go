@@ -62,6 +62,7 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 }
 
 func (f *FirebaseStates) SetState(state *UserState) error {
+	state.LastAccessAt = time.Now()
 	f.debugUserState(state, "saving user state")
 
 	wr, err := f.fc.Collection(collection).Doc(strconv.FormatInt(state.UserId, 10)).Set(context.Background(), state)

@@ -34,6 +34,7 @@ type UserState struct {
 	Accounts           []Account      `firestore:"accounts"`
 	MessageHandlerName string         `firestore:"messageHandlerName"`
 	SentMessagesCount  int            `firestore:"sentMessagesCount"`
+	LastAccessAt       time.Time      `firestore:"lastAccessAt"`
 	Form               map[string]any `firestore:"form"`
 }
 
