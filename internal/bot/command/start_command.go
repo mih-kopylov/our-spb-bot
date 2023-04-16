@@ -1,10 +1,12 @@
-package bot
+package command
 
 import (
 	_ "embed"
+	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"strings"
@@ -19,9 +21,17 @@ const (
 )
 
 type StartCommand struct {
-	states state.States `di.inject:"States"`
-	tgbot  *TgBot       `di.inject:"TgBot"`
-	info   *info.Info   `di.inject:"Info"`
+	states  state.States
+	service *service.Service
+	info    *info.Info
+}
+
+func NewStartCommand(states state.States, service *service.Service, info *info.Info) bot.Command {
+	return &StartCommand{
+		states:  states,
+		service: service,
+		info:    info,
+	}
 }
 
 func (c *StartCommand) Name() string {
@@ -36,7 +46,7 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 	userState, err := c.states.GetState(message.Chat.ID)
 	if err != nil {
 		if errorx.IsOfType(err, state.ErrRateLimited) {
-			err = c.tgbot.SendMessage(message.Chat, "Превышен лимит подключений к базе данных")
+			err = c.service.SendMessage(message.Chat, "Превышен лимит подключений к базе данных")
 			if err != nil {
 				return errorx.EnhanceStackTrace(err, "failed to send reply")
 			}
@@ -47,8 +57,12 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
-	userState.UserName = message.Chat.UserName
-	userState.FullName = message.Chat.FirstName + " " + message.Chat.LastName
+	if message.Chat.IsPrivate() {
+		userState.FullName = strings.TrimSpace(fmt.Sprintf("user / @%v %v %v", message.Chat.UserName, message.Chat.FirstName, message.Chat.LastName))
+	} else {
+		userState.FullName = strings.TrimSpace(fmt.Sprintf("%v / %v",
+			message.Chat.Type, message.Chat.Title))
+	}
 	userState.MessageHandlerName = ""
 	err = c.states.SetState(userState)
 	if err != nil {
@@ -60,20 +74,9 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to parse template")
 	}
 
-	commands := c.tgbot.GetCommands()
 	context := renderContext{
-		Commands: nil,
-		Version:  c.info.Version,
-		Commit:   c.info.Commit,
-	}
-	for _, commandName := range commands {
-		comm := di.GetInstance(commandName).(Command)
-		context.Commands = append(
-			context.Commands, commandDescription{
-				Name:        comm.Name(),
-				Description: comm.Description(),
-			},
-		)
+		Version: c.info.Version,
+		Commit:  c.info.Commit,
 	}
 
 	writer := strings.Builder{}
@@ -82,11 +85,10 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to render template")
 	}
 
-	reply := tgbotapi.NewMessage(message.Chat.ID, writer.String())
-	reply.ParseMode = tgbotapi.ModeHTML
-	reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-
-	_, err = c.tgbot.api.Send(reply)
+	err = c.service.SendMessageCustom(message.Chat, writer.String(), func(reply *tgbotapi.MessageConfig) {
+		reply.ParseMode = tgbotapi.ModeHTML
+		reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+	})
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")
 	}
@@ -99,12 +101,6 @@ func (c *StartCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {
 }
 
 type renderContext struct {
-	Commands []commandDescription
-	Version  string
-	Commit   string
-}
-
-type commandDescription struct {
-	Name        string
-	Description string
+	Version string
+	Commit  string
 }

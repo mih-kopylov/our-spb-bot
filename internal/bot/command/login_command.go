@@ -1,9 +1,12 @@
-package bot
+package command
 
 import (
 	_ "embed"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
@@ -12,10 +15,16 @@ const (
 )
 
 type LoginCommand struct {
-	states state.States `di.inject:"States"`
-	tgbot  *TgBot       `di.inject:"TgBot"`
+	states  state.States
+	service *service.Service
 }
 
+func NewLoginCommand(states state.States, service *service.Service) bot.Command {
+	return &LoginCommand{
+		states:  states,
+		service: service,
+	}
+}
 func (c *LoginCommand) Name() string {
 	return LoginCommandName
 }
@@ -30,14 +39,13 @@ func (c *LoginCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
-	userState.MessageHandlerName = LoginFormBeanId
+	userState.MessageHandlerName = form.LoginFormName
 	err = c.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
-	reply := tgbotapi.NewMessage(message.Chat.ID, "Введите логин от аккаунта на портале")
-	_, err = c.tgbot.api.Send(reply)
+	err = c.service.SendMessage(message.Chat, "Введите логин от аккаунта на портале")
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")
 	}

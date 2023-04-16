@@ -3,26 +3,24 @@ package queue
 import (
 	"cloud.google.com/go/firestore"
 	"context"
-	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
-	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
-	"reflect"
 	"time"
 )
 
 const (
-	BeanId     = "Queue"
 	collection = "messages"
 )
 
 type FirebaseQueue struct {
-	fc *firestore.Client `di.inject:"Storage"`
+	fc *firestore.Client
 }
 
-func RegisterQueueBean() {
-	_ = lo.Must(di.RegisterBean(BeanId, reflect.TypeOf((*FirebaseQueue)(nil))))
+func NewFirebaseQueue(storage *firestore.Client) *FirebaseQueue {
+	return &FirebaseQueue{
+		fc: storage,
+	}
 }
 
 func (q *FirebaseQueue) Add(message *Message) error {

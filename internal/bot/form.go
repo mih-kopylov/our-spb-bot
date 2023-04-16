@@ -5,5 +5,6 @@ import (
 )
 
 type Form interface {
+	Name() string
 	Handle(message *tgbotapi.Message) error
 }

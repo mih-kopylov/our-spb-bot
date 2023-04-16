@@ -29,7 +29,6 @@ const (
 
 type UserState struct {
 	UserId             int64          `firestore:"userId"`
-	UserName           string         `firestore:"userName"`
 	FullName           string         `firestore:"fullName"`
 	Accounts           []Account      `firestore:"accounts"`
 	MessageHandlerName string         `firestore:"messageHandlerName"`

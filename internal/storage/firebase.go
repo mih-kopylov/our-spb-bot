@@ -1,27 +1,29 @@
 package storage
 
 import (
+	"cloud.google.com/go/firestore"
 	"context"
 	"encoding/base64"
 	firebase "firebase.google.com/go/v4"
-	"github.com/goioc/di"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
-	"github.com/samber/lo"
 	"google.golang.org/api/option"
 )
 
-const (
-	BeanId = "Storage"
-)
-
-func RegisterBean(conf *config.Config) {
+func NewFirebaseStorage(conf *config.Config) (*firestore.Client, error) {
 	fbConfig := firebase.Config{
 		ProjectID: "ourspbbot",
 	}
-	serviceAccountJson := lo.Must(base64.StdEncoding.DecodeString(conf.FirebaseServiceAccount))
+	serviceAccountJson, err := base64.StdEncoding.DecodeString(conf.FirebaseServiceAccount)
+	if err != nil {
+		return nil, err
+	}
+
 	serviceAccountOption := option.WithCredentialsJSON(serviceAccountJson)
 	ctx := context.Background()
-	app := lo.Must(firebase.NewApp(ctx, &fbConfig, serviceAccountOption))
-	store := lo.Must(app.Firestore(ctx))
-	_ = lo.Must(di.RegisterBeanInstance(BeanId, store))
+	app, err := firebase.NewApp(ctx, &fbConfig, serviceAccountOption)
+	if err != nil {
+		return nil, err
+	}
+
+	return app.Firestore(ctx)
 }

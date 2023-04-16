@@ -1,33 +1,43 @@
-package bot
+package form
 
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
 	"github.com/lithammer/shortuuid/v4"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
-	"reflect"
 	"strings"
 	"time"
 )
 
 const (
-	MessageFormBeanId = "MessageForm"
+	MessageFormName = "MessageForm"
 )
 
 type MessageForm struct {
-	states         state.States                   `di.inject:"States"`
-	tgbot          *TgBot                         `di.inject:"TgBot"`
-	messageQueue   queue.MessageQueue             `di.inject:"Queue"`
-	cateogiresTree *category.UserCategoryTreeNode `di.inject:"Categories"`
+	states         state.States
+	service        *service.Service
+	messageQueue   queue.MessageQueue
+	cateogiresTree *category.UserCategoryTreeNode
 }
 
-func RegisterMessageFormBean() {
-	_ = lo.Must(di.RegisterBean(MessageFormBeanId, reflect.TypeOf((*MessageForm)(nil))))
+func (f *MessageForm) Name() string {
+	return MessageFormName
+}
+
+func NewMessageForm(states state.States, service *service.Service,
+	messageQueue queue.MessageQueue, cateogiresTree *category.UserCategoryTreeNode) bot.Form {
+	return &MessageForm{
+		states:         states,
+		service:        service,
+		messageQueue:   messageQueue,
+		cateogiresTree: cateogiresTree,
+	}
 }
 
 func (f *MessageForm) Handle(message *tgbotapi.Message) error {
@@ -45,7 +55,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 		}
 
 		replyText := "Текст сообщения заменён."
-		return f.tgbot.SendMessageCustom(
+		return f.service.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
 			},
@@ -68,7 +78,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 		reply := fmt.Sprintf(`Фотография добавлена
 
 Размер: %vx%v`, maxPhotoSize.Width, maxPhotoSize.Height)
-		return f.tgbot.SendMessageCustom(
+		return f.service.SendMessageCustom(
 			message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
 				reply.ReplyMarkup = tgbotapi.NewReplyKeyboard(
@@ -130,7 +140,7 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			len(queueMessage.Files),
 			queueMessage.Files,
 		)
-		err = f.tgbot.SendMessageCustom(
+		err = f.service.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 			},
