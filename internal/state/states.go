@@ -137,20 +137,9 @@ func (s *UserState) AddValueToStringSlice(key FormField, value string) {
 		s.Form = map[string]any{}
 	}
 
-	storedValue, exists := s.Form[string(key)]
-	if !exists {
-		storedValue = []string{}
-		s.Form[string(key)] = storedValue
-	}
-
-	slice, ok := storedValue.([]string)
-	if !ok {
-		slice = []string{}
-	}
-
-	slice = append(slice, value)
-
-	s.Form[string(key)] = slice
+	currentValue := s.GetStringSlice(key)
+	currentValue = append(currentValue, value)
+	s.Form[string(key)] = currentValue
 }
 
 type AccountState string
