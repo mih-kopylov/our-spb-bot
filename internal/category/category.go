@@ -2,10 +2,8 @@ package category
 
 import (
 	_ "embed"
-	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
 	"github.com/lithammer/shortuuid/v4"
-	"github.com/samber/lo"
 	"gopkg.in/yaml.v3"
 	"strconv"
 	"strings"
@@ -14,18 +12,13 @@ import (
 //go:embed categories.yaml
 var categoriesText []byte
 
-const (
-	BeanId = "Categories"
-)
-
 var (
 	Errors                 = errorx.NewNamespace("Category")
 	ErrMalformedCategories = Errors.NewType("MalformedCategories")
 )
 
-func RegisterBean() {
-	tree := lo.Must(createUserCategoryTree(categoriesText))
-	_ = lo.Must(di.RegisterBeanInstance(BeanId, tree))
+func NewUserCategoryTreeNode() (*UserCategoryTreeNode, error) {
+	return createUserCategoryTree(categoriesText)
 }
 
 type UserCategory struct {

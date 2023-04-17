@@ -2,22 +2,15 @@ package bot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
-	"reflect"
+	"golang.org/x/exp/maps"
 	"strings"
 )
 
-type TgBot struct {
-	api    *tgbotapi.BotAPI `di.inject:"TgApi"`
-	states state.States     `di.inject:"States"`
-}
-
 const (
-	TgBotBeanId      = "TgBot"
 	SectionSeparator = "."
 )
 
@@ -26,45 +19,40 @@ var (
 	ErrFailedToDeleteMessage = Errors.NewType("FailedToDeleteMessage")
 )
 
-func RegisterBotBean() {
-	_ = lo.Must(di.RegisterBean(TgBotBeanId, reflect.TypeOf((*TgBot)(nil))))
-
-	_ = lo.Must(di.RegisterBean(StartCommandName, reflect.TypeOf((*StartCommand)(nil))))
-	_ = lo.Must(di.RegisterBean(StatusCommandName, reflect.TypeOf((*StatusCommand)(nil))))
-	_ = lo.Must(di.RegisterBean(MessageCommandName, reflect.TypeOf((*MessageCommand)(nil))))
-	_ = lo.Must(di.RegisterBean(LoginCommandName, reflect.TypeOf((*LoginCommand)(nil))))
-	_ = lo.Must(di.RegisterBean(ResetStatusCommandName, reflect.TypeOf((*ResetStatusCommand)(nil))))
-	_ = lo.Must(di.RegisterBean(FileIdCommandName, reflect.TypeOf((*FileIdCommand)(nil))))
-
-	RegisterMessageFormBean()
-	RegisterLoginFormBean()
-	RegisterPasswordFormBean()
-	RegisterFileIdFormBean()
+type TgBot struct {
+	api      *tgbotapi.BotAPI
+	states   state.States
+	commands map[string]Command
+	forms    map[string]Form
 }
 
-func (b *TgBot) RegisterBotCommands() {
-	setMyCommandsConfig := tgbotapi.NewSetMyCommands(
-		lo.Map(
-			b.GetCommands(), func(commandName string, _ int) tgbotapi.BotCommand {
-				comm := di.GetInstance(commandName).(Command)
-				return tgbotapi.BotCommand{
-					Command:     comm.Name(),
-					Description: comm.Description(),
-				}
-			},
-		)...,
-	)
-	_, err := b.api.Request(setMyCommandsConfig)
+func NewTgBot(api *tgbotapi.BotAPI, states state.States, commands []Command, forms []Form) *TgBot {
+	return &TgBot{
+		api:    api,
+		states: states,
+		commands: lo.SliceToMap(commands, func(item Command) (string, Command) {
+			return item.Name(), item
+		}),
+		forms: lo.SliceToMap(forms, func(item Form) (string, Form) {
+			return item.Name(), item
+		}),
+	}
+}
+
+func (b *TgBot) Start() error {
+	err := b.registerCommands()
 	if err != nil {
-		logrus.Fatal(errorx.EnhanceStackTrace(err, "failed to register bot commands"))
+		return err
 	}
 
-}
-func (b *TgBot) GetCommands() []string {
-	return []string{StartCommandName, LoginCommandName, MessageCommandName, StatusCommandName, ResetStatusCommandName, FileIdCommandName}
+	go func() {
+		b.processUpdates()
+	}()
+
+	return nil
 }
 
-func (b *TgBot) ProcessUpdates() {
+func (b *TgBot) processUpdates() {
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = 30
 
@@ -95,16 +83,20 @@ func (b *TgBot) ProcessUpdates() {
 	}
 }
 
-func (b *TgBot) SendMessage(chat *tgbotapi.Chat, text string) error {
-	return b.SendMessageCustom(chat, text, func(reply *tgbotapi.MessageConfig) {})
-}
-
-func (b *TgBot) SendMessageCustom(chat *tgbotapi.Chat, text string, messageAdjuster func(reply *tgbotapi.MessageConfig)) error {
-	message := tgbotapi.NewMessage(chat.ID, text)
-	messageAdjuster(&message)
-	_, err := b.api.Send(message)
+func (b *TgBot) registerCommands() error {
+	setMyCommandsConfig := tgbotapi.NewSetMyCommands(
+		lo.Map(
+			maps.Values(b.commands), func(command Command, _ int) tgbotapi.BotCommand {
+				return tgbotapi.BotCommand{
+					Command:     command.Name(),
+					Description: command.Description(),
+				}
+			},
+		)...,
+	)
+	_, err := b.api.Request(setMyCommandsConfig)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to send reply")
+		return errorx.EnhanceStackTrace(err, "failed to register bot commands")
 	}
 
 	return nil
@@ -117,12 +109,12 @@ func (b *TgBot) handleCallback(callbackQuery *tgbotapi.CallbackQuery) error {
 		return errorx.IllegalArgument.New("unsupported callback data format")
 	}
 
-	comm, err := di.GetInstanceSafe(commandName)
-	if err != nil {
+	comm, exists := b.commands[commandName]
+	if !exists {
 		return errorx.IllegalArgument.New("unsupported command name: name=%v", commandName)
 	}
 
-	err = comm.(Command).Callback(callbackQuery, value)
+	err := comm.Callback(callbackQuery, value)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to handle callback")
 	}
@@ -134,12 +126,12 @@ func (b *TgBot) handleMessage(message *tgbotapi.Message) error {
 	commandName := message.Command()
 
 	if commandName != "" {
-		comm, err := di.GetInstanceSafe(commandName)
-		if err != nil {
+		comm, exists := b.commands[commandName]
+		if !exists {
 			return errorx.IllegalArgument.New("unsupported command name: name=%v", commandName)
 		}
 
-		err = comm.(Command).Handle(message)
+		err := comm.Handle(message)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to handle command")
 		}
@@ -149,29 +141,15 @@ func (b *TgBot) handleMessage(message *tgbotapi.Message) error {
 			return errorx.EnhanceStackTrace(err, "failed to get user state")
 		}
 
-		formInstance, err := di.GetInstanceSafe(userState.MessageHandlerName)
-		if err != nil {
-			return errorx.EnhanceStackTrace(err, "no message handler is waiting for a message")
+		form, exists := b.forms[userState.MessageHandlerName]
+		if !exists {
+			return errorx.IllegalState.New("no message handler is waiting for a message")
 		}
 
-		err = formInstance.(Form).Handle(message)
+		err = form.Handle(message)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to handle message")
 		}
-	}
-
-	return nil
-}
-
-func (b *TgBot) DeleteMessage(message *tgbotapi.Message) error {
-	deleteMessage := tgbotapi.NewDeleteMessage(message.Chat.ID, message.MessageID)
-	resp, err := b.api.Request(deleteMessage)
-	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to delete message: chat=%v, message=%v", message.Chat.ID, message.MessageID)
-	}
-
-	if !resp.Ok {
-		return ErrFailedToDeleteMessage.New("resp=%v", resp)
 	}
 
 	return nil

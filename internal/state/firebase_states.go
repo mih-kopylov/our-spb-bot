@@ -3,33 +3,31 @@ package state
 import (
 	"cloud.google.com/go/firestore"
 	"context"
-	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
-	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
-	"reflect"
 	"strconv"
 	"time"
 )
 
 const (
-	BeanId     = "States"
 	collection = "states"
 )
 
 type FirebaseStates struct {
-	fc *firestore.Client `di.inject:"Storage"`
+	storage *firestore.Client
 }
 
-func RegisterBean() {
-	_ = lo.Must(di.RegisterBean(BeanId, reflect.TypeOf((*FirebaseStates)(nil))))
+func NewFirebaseState(storage *firestore.Client) *FirebaseStates {
+	return &FirebaseStates{
+		storage: storage,
+	}
 }
 
 func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
-	doc := f.fc.Collection(collection).Doc(strconv.FormatInt(userId, 10))
+	doc := f.storage.Collection(collection).Doc(strconv.FormatInt(userId, 10))
 	snapshot, err := doc.Get(context.Background())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
@@ -65,7 +63,7 @@ func (f *FirebaseStates) SetState(state *UserState) error {
 	state.LastAccessAt = time.Now()
 	f.debugUserState(state, "saving user state")
 
-	wr, err := f.fc.Collection(collection).Doc(strconv.FormatInt(state.UserId, 10)).Set(context.Background(), state)
+	wr, err := f.storage.Collection(collection).Doc(strconv.FormatInt(state.UserId, 10)).Set(context.Background(), state)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state: userId=%v", state.UserId)
 	} else {

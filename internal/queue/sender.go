@@ -1,9 +1,9 @@
 package queue
 
 import (
+	"context"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/goioc/di"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
@@ -13,24 +13,19 @@ import (
 	"github.com/sirupsen/logrus"
 	"math"
 	"net/http"
-	"reflect"
 	"time"
 )
 
 type MessageSender struct {
-	states    state.States     `di.inject:"States"`
-	queue     MessageQueue     `di.inject:"Queue"`
-	spbClient spb.Client       `di.inject:"SpbClient"`
-	api       *tgbotapi.BotAPI `di.inject:"TgApi"`
+	states        state.States
+	queue         MessageQueue
+	spbClient     spb.Client
+	api           *tgbotapi.BotAPI
+	sleepDuration time.Duration
 }
 
-const (
-	SenderBeanId = "Sender"
-)
-
 var (
-	spbLocation   = time.FixedZone("UTC+3", 3*60*60)
-	sleepDuration time.Duration
+	spbLocation = time.FixedZone("UTC+3", 3*60*60)
 )
 
 var (
@@ -40,35 +35,36 @@ var (
 	ErrAllAccountsRateLimited = Errors.NewType("AllAccountsRateLimited")
 )
 
-func RegisterSenderBean(conf *config.Config) {
-	sleepDuration = conf.SleepDuration
-	_ = lo.Must(di.RegisterBean(SenderBeanId, reflect.TypeOf((*MessageSender)(nil))))
-
-	lo.Must0(di.RegisterBeanPostprocessor(reflect.TypeOf((*MessageSender)(nil)), func(sender any) error {
-		sender.(*MessageSender).Start()
-		return nil
-	}))
+func NewMessageSender(conf *config.Config, states state.States, queue MessageQueue, spbClient spb.Client, api *tgbotapi.BotAPI) *MessageSender {
+	return &MessageSender{
+		states:        states,
+		queue:         queue,
+		spbClient:     spbClient,
+		api:           api,
+		sleepDuration: conf.SleepDuration,
+	}
 }
 
-func (s *MessageSender) Start() {
+func (s *MessageSender) Start(_ context.Context) error {
 	go func() {
 		for {
 			s.sendNextMessage()
 		}
 	}()
+	return nil
 }
 
 func (s *MessageSender) sendNextMessage() {
 	logrus.Debug("polling messages")
 	message, err := s.queue.Poll()
 	if err != nil {
-		logrus.Error(errorx.EnhanceStackTrace(err, "failed to poll next message, sleeping for "+sleepDuration.String()))
-		time.Sleep(sleepDuration)
+		logrus.Error(errorx.EnhanceStackTrace(err, "failed to poll next message, sleeping for "+s.sleepDuration.String()))
+		time.Sleep(s.sleepDuration)
 		return
 	}
 	if message == nil {
-		logrus.Debug("no messages found, sleeping for " + sleepDuration.String())
-		time.Sleep(sleepDuration)
+		logrus.Debug("no messages found, sleeping for " + s.sleepDuration.String())
+		time.Sleep(s.sleepDuration)
 		return
 	}
 

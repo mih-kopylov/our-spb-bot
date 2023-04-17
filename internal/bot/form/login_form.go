@@ -1,26 +1,33 @@
-package bot
+package form
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/goioc/di"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
-	"reflect"
 	"strings"
 )
 
 const (
-	LoginFormBeanId = "LoginForm"
+	LoginFormName = "LoginForm"
 )
 
 type LoginForm struct {
-	states state.States `di.inject:"States"`
-	tgbot  *TgBot       `di.inject:"TgBot"`
+	states  state.States
+	service *service.Service
 }
 
-func RegisterLoginFormBean() {
-	_ = lo.Must(di.RegisterBean(LoginFormBeanId, reflect.TypeOf((*LoginForm)(nil))))
+func NewLoginForm(states state.States, service *service.Service) bot.Form {
+	return &LoginForm{
+		states:  states,
+		service: service,
+	}
+}
+
+func (f *LoginForm) Name() string {
+	return LoginFormName
 }
 
 func (f *LoginForm) Handle(message *tgbotapi.Message) error {
@@ -31,10 +38,10 @@ func (f *LoginForm) Handle(message *tgbotapi.Message) error {
 
 	login := message.Text
 	if login == "" {
-		return f.tgbot.SendMessage(message.Chat, "Введите логин")
+		return f.service.SendMessage(message.Chat, "Введите логин")
 	}
 
-	err = f.tgbot.DeleteMessage(message)
+	err = f.service.DeleteMessage(message)
 	if err != nil {
 		return err
 	}
@@ -42,15 +49,15 @@ func (f *LoginForm) Handle(message *tgbotapi.Message) error {
 	if lo.CountBy(userState.Accounts, func(item state.Account) bool {
 		return strings.EqualFold(item.Login, login)
 	}) > 0 {
-		return f.tgbot.SendMessage(message.Chat, "Этот логин уже используется, введите новый")
+		return f.service.SendMessage(message.Chat, "Этот логин уже используется, введите новый")
 	}
 
 	userState.SetFormField(state.FormFieldLogin, login)
-	userState.MessageHandlerName = PasswordFormBeanId
+	userState.MessageHandlerName = PasswordFormName
 	err = f.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
-	return f.tgbot.SendMessage(message.Chat, "Введите пароль")
+	return f.service.SendMessage(message.Chat, "Введите пароль")
 }

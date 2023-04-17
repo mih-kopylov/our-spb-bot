@@ -1,10 +1,13 @@
-package bot
+package command
 
 import (
 	_ "embed"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"strings"
@@ -16,9 +19,17 @@ const (
 )
 
 type MessageCommand struct {
-	states         state.States                   `di.inject:"States"`
-	tgbot          *TgBot                         `di.inject:"TgBot"`
-	cateogiresTree *category.UserCategoryTreeNode `di.inject:"Categories"`
+	states         state.States
+	service        *service.Service
+	cateogiresTree *category.UserCategoryTreeNode
+}
+
+func NewMessageCommand(states state.States, service *service.Service, cateogiresTree *category.UserCategoryTreeNode) bot.Command {
+	return &MessageCommand{
+		states:         states,
+		service:        service,
+		cateogiresTree: cateogiresTree,
+	}
 }
 
 func (c *MessageCommand) Name() string {
@@ -36,7 +47,7 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 	}
 
 	if len(userState.Accounts) == 0 {
-		return c.tgbot.SendMessage(message.Chat, `Вы не авторизованы на портале.
+		return c.service.SendMessage(message.Chat, `Вы не авторизованы на портале.
 
 Для того, чтобы отправить обращение, нужно авторизоваться на портале с логином и паролем. 
 
@@ -49,7 +60,7 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
-	return c.tgbot.SendMessageCustom(message.Chat, "Выберите категорию", func(reply *tgbotapi.MessageConfig) {
+	return c.service.SendMessageCustom(message.Chat, "Выберите категорию", func(reply *tgbotapi.MessageConfig) {
 		reply.ReplyToMessageID = message.MessageID
 		reply.ReplyMarkup = c.createCateogoriesReplyMarkup(userState)
 	})
@@ -97,7 +108,7 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 			markup = c.createCateogoriesReplyMarkup(userState)
 			userState.SetFormField(state.FormFieldMessageText, childFound.Category.Message)
 			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id)
-			userState.MessageHandlerName = MessageFormBeanId
+			userState.MessageHandlerName = form.MessageFormName
 		}
 
 		err = c.states.SetState(userState)
@@ -107,9 +118,9 @@ func (c *MessageCommand) Callback(callbackQuery *tgbotapi.CallbackQuery, data st
 	}
 
 	reply := tgbotapi.NewEditMessageTextAndMarkup(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID, replyText, markup)
-	_, err = c.tgbot.api.Send(reply)
+	err = c.service.Send(reply)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to send reply")
+		return err
 	}
 
 	return nil
@@ -119,7 +130,7 @@ func (c *MessageCommand) createCateogoriesReplyMarkup(userState *state.UserState
 	result := tgbotapi.NewInlineKeyboardMarkup()
 
 	if userState.GetStringFormField(state.FormFieldCurrentCategoryNode) != "" {
-		backButton := tgbotapi.NewInlineKeyboardButtonData("⬆ Вверх", MessageCommandName+SectionSeparator+DataBack)
+		backButton := tgbotapi.NewInlineKeyboardButtonData("⬆ Вверх", MessageCommandName+bot.SectionSeparator+DataBack)
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(backButton))
 	}
 
@@ -132,7 +143,7 @@ func (c *MessageCommand) createCateogoriesReplyMarkup(userState *state.UserState
 		for j := 0; j < buttonsPerRow; j++ {
 			if i+j < len(currentCategoryNode.Children) {
 				child := currentCategoryNode.Children[i+j]
-				itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+SectionSeparator+child.Id)
+				itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCommandName+bot.SectionSeparator+child.Id)
 				row = append(row, itemButton)
 			}
 		}

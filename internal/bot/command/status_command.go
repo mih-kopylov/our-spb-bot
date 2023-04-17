@@ -1,10 +1,12 @@
-package bot
+package command
 
 import (
 	_ "embed"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
@@ -17,9 +19,17 @@ const (
 )
 
 type StatusCommand struct {
-	states       state.States       `di.inject:"States"`
-	tgbot        *TgBot             `di.inject:"TgBot"`
-	messageQueue queue.MessageQueue `di.inject:"Queue"`
+	states       state.States
+	service      *service.Service
+	messageQueue queue.MessageQueue
+}
+
+func NewStatusCommand(states state.States, service *service.Service, messageQueue queue.MessageQueue) bot.Command {
+	return &StatusCommand{
+		states:       states,
+		service:      service,
+		messageQueue: messageQueue,
+	}
 }
 
 func (c *StatusCommand) Name() string {
@@ -34,7 +44,7 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 	userState, err := c.states.GetState(message.Chat.ID)
 	if err != nil {
 		if errorx.IsOfType(err, state.ErrRateLimited) {
-			err = c.tgbot.SendMessage(message.Chat, "Превышен лимит подключений к базе данных")
+			err = c.service.SendMessage(message.Chat, "Превышен лимит подключений к базе данных")
 			if err != nil {
 				return errorx.EnhanceStackTrace(err, "failed to send reply")
 			}
@@ -65,8 +75,8 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 		}), "\n")
 	}
 
-	reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
-Пользователь: @%v
+	reply := fmt.Sprintf(`
+Пользователь: %v id=%v
 Аккаунты:
 %v
 Сообщений отправлено: %v
@@ -76,14 +86,15 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 
 /message - отправить новое обращение 
 `,
-		message.Chat.UserName,
+		userState.FullName,
+		userState.UserId,
 		accounts,
 		userState.SentMessagesCount,
 		messagesCount[queue.StatusCreated],
 		messagesCount[queue.StatusFailed],
 		messagesCount[queue.StatusAwaitingAuthorization],
-	))
-	_, err = c.tgbot.api.Send(reply)
+	)
+	err = c.service.SendMessage(message.Chat, reply)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")
 	}

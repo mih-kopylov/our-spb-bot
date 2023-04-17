@@ -1,8 +1,11 @@
-package bot
+package command
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
@@ -11,8 +14,15 @@ const (
 )
 
 type FileIdCommand struct {
-	states state.States `di.inject:"States"`
-	tgbot  *TgBot       `di.inject:"TgBot"`
+	states  state.States
+	service *service.Service
+}
+
+func NewFileIdCommand(states state.States, service *service.Service) bot.Command {
+	return &FileIdCommand{
+		states:  states,
+		service: service,
+	}
 }
 
 func (c *FileIdCommand) Name() string {
@@ -29,13 +39,13 @@ func (c *FileIdCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
-	userState.MessageHandlerName = FileIdFormBeanId
+	userState.MessageHandlerName = form.FileIdFormName
 	err = c.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
-	return c.tgbot.SendMessage(message.Chat, `Отправляйте файлы, в ответ я напишу их идентификатор.
+	return c.service.SendMessage(message.Chat, `Отправляйте файлы, в ответ я напишу их идентификатор.
 
 Если написать идентификатор, то я пришлю ссылку на скачивание фото.`)
 }

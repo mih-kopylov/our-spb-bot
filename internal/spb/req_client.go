@@ -2,20 +2,14 @@ package spb
 
 import (
 	"fmt"
-	"github.com/goioc/di"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
-	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 	"net/http"
 	"strings"
 	"time"
-)
-
-const (
-	BeanId = "SpbClient"
 )
 
 type ReqClient struct {
@@ -24,18 +18,14 @@ type ReqClient struct {
 	secret   string
 }
 
-func RegisterBean(conf *config.Config) {
-	client := newReqClient(conf)
-	_ = lo.Must(di.RegisterBeanInstance(BeanId, client))
-}
-
-func newReqClient(conf *config.Config) Client {
+func NewReqClient(conf *config.Config) *ReqClient {
 	client := req.C().
 		SetBaseURL("https://gorod.gov.spb.ru").
 		// this is to pretend to be an official client
 		SetUserAgent("okhttp/2.5.0").
 		EnableDumpEachRequest().
 		SetTimeout(5 * time.Second)
+	client.GetTransport()
 
 	return &ReqClient{
 		client:   client,

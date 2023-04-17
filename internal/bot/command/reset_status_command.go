@@ -1,10 +1,12 @@
-package bot
+package command
 
 import (
 	_ "embed"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"time"
 )
@@ -14,8 +16,15 @@ const (
 )
 
 type ResetStatusCommand struct {
-	tgbot        *TgBot             `di.inject:"TgBot"`
-	messageQueue queue.MessageQueue `di.inject:"Queue"`
+	service      *service.Service
+	messageQueue queue.MessageQueue
+}
+
+func NewResetStatusCommand(service *service.Service, messageQueue queue.MessageQueue) bot.Command {
+	return &ResetStatusCommand{
+		service:      service,
+		messageQueue: messageQueue,
+	}
 }
 
 func (c *ResetStatusCommand) Name() string {
@@ -43,7 +52,7 @@ func (c *ResetStatusCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to update each message")
 	}
 
-	reply := tgbotapi.NewMessage(message.Chat.ID, fmt.Sprintf(`
+	reply := fmt.Sprintf(`
 Пользователь: @%v
 Обновлено сообщений: %v
 
@@ -53,8 +62,8 @@ func (c *ResetStatusCommand) Handle(message *tgbotapi.Message) error {
 `,
 		message.Chat.UserName,
 		counter,
-	))
-	_, err = c.tgbot.api.Send(reply)
+	)
+	err = c.service.SendMessage(message.Chat, reply)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to send reply")
 	}

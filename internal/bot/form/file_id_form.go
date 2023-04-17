@@ -1,23 +1,29 @@
-package bot
+package form
 
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/goioc/di"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/samber/lo"
-	"reflect"
 )
 
 const (
-	FileIdFormBeanId = "FileIdForm"
+	FileIdFormName = "FileIdForm"
 )
 
 type FileIdForm struct {
-	tgbot *TgBot `di.inject:"TgBot"`
+	service *service.Service
 }
 
-func RegisterFileIdFormBean() {
-	_ = lo.Must(di.RegisterBean(FileIdFormBeanId, reflect.TypeOf((*FileIdForm)(nil))))
+func NewFileIdForm(service *service.Service) bot.Form {
+	return &FileIdForm{
+		service: service,
+	}
+}
+
+func (f *FileIdForm) Name() string {
+	return FileIdFormName
 }
 
 func (f *FileIdForm) Handle(message *tgbotapi.Message) error {
@@ -28,14 +34,14 @@ func (f *FileIdForm) Handle(message *tgbotapi.Message) error {
 			},
 		)
 
-		directURL, err := f.tgbot.api.GetFileDirectURL(maxPhotoSize.FileID)
+		directURL, err := f.service.GetFileDirectUrl(maxPhotoSize.FileID)
 		if err != nil {
 			return err
 		}
 
 		reply := fmt.Sprintf(`FileId: %v
 Url: %v`, maxPhotoSize.FileID, directURL)
-		err = f.tgbot.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
+		err = f.service.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {
@@ -43,21 +49,21 @@ Url: %v`, maxPhotoSize.FileID, directURL)
 		}
 	} else if message.Text != "" {
 		fileId := message.Text
-		directURL, err := f.tgbot.api.GetFileDirectURL(fileId)
+		directURL, err := f.service.GetFileDirectUrl(fileId)
 		if err != nil {
 			return err
 		}
 
 		reply := fmt.Sprintf(`FileId: %v
 Url: %v`, fileId, directURL)
-		err = f.tgbot.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
+		err = f.service.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {
 			return err
 		}
 	} else {
-		err := f.tgbot.SendMessageCustom(message.Chat, "Фото не найдено", func(reply *tgbotapi.MessageConfig) {
+		err := f.service.SendMessageCustom(message.Chat, "Фото не найдено", func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {
