@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Missed `sender` start invocation
+
 ## [0.20.0] - 2023-04-17
 
 ### Changed

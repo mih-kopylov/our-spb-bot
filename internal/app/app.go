@@ -80,8 +80,11 @@ func createApp(version string, commit string) fx.Option {
 				form.NewFileIdForm, fx.ResultTags(`group:"forms"`),
 			),
 		),
-		fx.Invoke(func(bot *bot.TgBot, sender *queue.MessageSender) error {
+		fx.Invoke(func(bot *bot.TgBot) error {
 			return bot.Start()
+		}),
+		fx.Invoke(func(sender *queue.MessageSender) error {
+			return sender.Start()
 		}),
 	)
 }

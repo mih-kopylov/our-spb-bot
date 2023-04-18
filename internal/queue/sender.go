@@ -1,7 +1,6 @@
 package queue
 
 import (
-	"context"
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/imroc/req/v3"
@@ -45,7 +44,7 @@ func NewMessageSender(conf *config.Config, states state.States, queue MessageQue
 	}
 }
 
-func (s *MessageSender) Start(_ context.Context) error {
+func (s *MessageSender) Start() error {
 	go func() {
 		for {
 			s.sendNextMessage()
