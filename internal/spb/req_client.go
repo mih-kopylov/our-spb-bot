@@ -6,7 +6,6 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/sirupsen/logrus"
-	"gopkg.in/yaml.v3"
 	"net/http"
 	"strings"
 	"time"
@@ -76,9 +75,11 @@ func (r *ReqClient) GetReasons() ([]CityResponse, error) {
 	return result, nil
 }
 
-func (r *ReqClient) Send(token string, fields map[string]string, files map[string][]byte) error {
+func (r *ReqClient) Send(token string, fields map[string]string, files map[string][]byte) (*SentMessageResponse, error) {
+	var result SentMessageResponse
 	var errorResponse ErrorResponse
 	request := r.client.R()
+	request.SetSuccessResult(&result)
 	request.SetErrorResult(&errorResponse)
 	r.configureRetries(request)
 	request.SetHeader("Authorization", "Bearer "+token)
@@ -90,23 +91,23 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 	response, err := request.Post("/api/v4.0/problems/")
 	if err != nil {
 		r.printDebugDump(response)
-		return ErrFailedRequest.Wrap(err, "failed to send a message")
+		return nil, ErrFailedRequest.Wrap(err, "failed to send a message")
 	}
 
 	if response.IsErrorState() || !response.IsSuccessState() {
 		if strings.Contains(errorResponse.String(), "Выберите не дом.") {
-			return ErrExpectingNotBuildingCoords.New("failed to send a message, expecting not a building coordinates")
+			return nil, ErrExpectingNotBuildingCoords.New("failed to send a message, expecting not a building coordinates")
 		}
 		if strings.Contains(errorResponse.String(), "Вы отправили 10 сообщений за сутки.") {
-			return ErrTooManyRequests.Wrap(err, "too many requests")
+			return nil, ErrTooManyRequests.Wrap(err, "too many requests")
 		}
 		if response.StatusCode == http.StatusUnauthorized {
-			return ErrUnauthorized.Wrap(err, "token expired")
+			return nil, ErrUnauthorized.Wrap(err, "token expired")
 		}
-		return ErrBadRequest.New("failed to send a message: status=%v, response=%v", response.StatusCode, errorResponse.String())
+		return nil, ErrBadRequest.New("failed to send a message: status=%v, response=%v", response.StatusCode, errorResponse.String())
 	}
 
-	return nil
+	return &result, nil
 }
 
 func (r *ReqClient) CreateSendProblemRequest(reasonId int64, body string, latitude float64, longitude float64) (map[string]string, error) {
@@ -226,11 +227,4 @@ func (r *ReqClient) getNearestBuilding(latitude float64, longitude float64) (*Bu
 	}
 
 	return &nearestBuildings.Buildings[0], nil
-}
-
-type ErrorResponse map[string]any
-
-func (r *ErrorResponse) String() string {
-	out, _ := yaml.Marshal(r)
-	return string(out)
 }

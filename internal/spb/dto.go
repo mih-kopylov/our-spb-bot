@@ -1,5 +1,14 @@
 package spb
 
+import "gopkg.in/yaml.v3"
+
+type ErrorResponse map[string]any
+
+func (r *ErrorResponse) String() string {
+	out, _ := yaml.Marshal(r)
+	return string(out)
+}
+
 type TokenResponse struct {
 	AccessToken string `json:"access_token"`
 }
@@ -68,4 +77,8 @@ type Message struct {
 	CategoryId  int
 	FileUrls    []string
 	Description string
+}
+
+type SentMessageResponse struct {
+	Id string `json:"id"`
 }

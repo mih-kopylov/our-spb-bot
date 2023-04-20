@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
@@ -20,6 +21,7 @@ type MessageSender struct {
 	queue         MessageQueue
 	spbClient     spb.Client
 	api           *tgbotapi.BotAPI
+	service       *service.Service
 	sleepDuration time.Duration
 }
 
@@ -34,12 +36,14 @@ var (
 	ErrAllAccountsRateLimited = Errors.NewType("AllAccountsRateLimited")
 )
 
-func NewMessageSender(conf *config.Config, states state.States, queue MessageQueue, spbClient spb.Client, api *tgbotapi.BotAPI) *MessageSender {
+func NewMessageSender(conf *config.Config, states state.States, queue MessageQueue, spbClient spb.Client,
+	api *tgbotapi.BotAPI, service *service.Service) *MessageSender {
 	return &MessageSender{
 		states:        states,
 		queue:         queue,
 		spbClient:     spbClient,
 		api:           api,
+		service:       service,
 		sleepDuration: conf.SleepDuration,
 	}
 }
@@ -107,10 +111,23 @@ func (s *MessageSender) sendNextMessage() {
 	}
 
 	logrus.WithField("id", message.Id).Debug("sending message")
-	err = s.spbClient.Send(account.Token, request, files)
+	sentMessageResponse, err := s.spbClient.Send(account.Token, request, files)
 	if err != nil {
 		logrus.WithField("id", message.Id).Warn(errorx.EnhanceStackTrace(err, "failed to send message"))
 		s.handleMessageSendingError(err, userState, account, message)
+		return
+	}
+
+	err = s.service.SendMessage(&tgbotapi.Chat{ID: message.UserId}, fmt.Sprintf(`Обращение отправлено.
+Пользователь: %v
+Id: %v
+Ссылка: https://gorod.gov.spb.ru/problems/%v/`,
+		account.Login,
+		message.Id,
+		sentMessageResponse.Id,
+	))
+	if err != nil {
+		logrus.WithField("id", message.Id).Warn(errorx.EnhanceStackTrace(err, "failed to send reply"))
 		return
 	}
 
