@@ -17,7 +17,7 @@ require (
 	github.com/testcontainers/testcontainers-go v0.19.0
 	github.com/walkerus/go-wiremock v1.5.0
 	go.uber.org/fx v1.19.2
-	golang.org/x/exp v0.0.0-20230419192730-864b3d6c5c2c
+	golang.org/x/exp v0.0.0-20230420155640-133eef4313cb
 	google.golang.org/api v0.119.0
 	google.golang.org/grpc v1.54.0
 	gopkg.in/yaml.v3 v3.0.1
