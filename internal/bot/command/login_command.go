@@ -52,7 +52,3 @@ func (c *LoginCommand) Handle(message *tgbotapi.Message) error {
 
 	return nil
 }
-
-func (c *LoginCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {
-	return nil
-}

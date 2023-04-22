@@ -49,7 +49,3 @@ func (c *FileIdCommand) Handle(message *tgbotapi.Message) error {
 
 Если написать идентификатор, то я пришлю ссылку на скачивание фото.`)
 }
-
-func (c *FileIdCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {
-	return nil
-}

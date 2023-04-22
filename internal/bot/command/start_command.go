@@ -96,10 +96,6 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 	return nil
 }
 
-func (c *StartCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {
-	return nil
-}
-
 type renderContext struct {
 	Version string
 	Commit  string

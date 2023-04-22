@@ -10,27 +10,27 @@ import (
 	"strings"
 )
 
-const (
-	SectionSeparator = "."
-)
-
 var (
 	Errors                   = errorx.NewNamespace("Bot")
 	ErrFailedToDeleteMessage = Errors.NewType("FailedToDeleteMessage")
 )
 
 type TgBot struct {
-	api      *tgbotapi.BotAPI
-	states   state.States
-	commands map[string]Command
-	forms    map[string]Form
+	api       *tgbotapi.BotAPI
+	states    state.States
+	commands  map[string]Command
+	callbacks map[string]Callback
+	forms     map[string]Form
 }
 
-func NewTgBot(api *tgbotapi.BotAPI, states state.States, commands []Command, forms []Form) *TgBot {
+func NewTgBot(api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback, forms []Form) *TgBot {
 	return &TgBot{
 		api:    api,
 		states: states,
 		commands: lo.SliceToMap(commands, func(item Command) (string, Command) {
+			return item.Name(), item
+		}),
+		callbacks: lo.SliceToMap(callbacks, func(item Callback) (string, Callback) {
 			return item.Name(), item
 		}),
 		forms: lo.SliceToMap(forms, func(item Form) (string, Form) {
@@ -58,28 +58,22 @@ func (b *TgBot) processUpdates() {
 
 	updates := b.api.GetUpdatesChan(updateConfig)
 	for update := range updates {
-		var stack *errorx.Error
-		var chat *tgbotapi.Chat
-
-		if update.CallbackQuery != nil {
-			err := b.handleCallback(update.CallbackQuery)
-			if err != nil {
-				chat = update.CallbackQuery.Message.Chat
-				stack = errorx.EnhanceStackTrace(err, "failed to handle callback")
-			}
-		} else if update.Message != nil {
-			err := b.handleMessage(update.Message)
-			if err != nil {
-				chat = update.Message.Chat
-				stack = errorx.EnhanceStackTrace(err, "failed to handle message")
-			}
-		} else {
-			logrus.Info("unsupported update type")
+		err := b.callHandler(update)
+		if err != nil {
+			err = errorx.EnhanceStackTrace(err, "failed to handle update")
+			logrus.WithField("chat", update.FromChat().ID).Error(err)
 		}
+	}
+}
 
-		if stack != nil {
-			logrus.WithField("chat", chat.ID).Error(stack)
-		}
+func (b *TgBot) callHandler(update tgbotapi.Update) error {
+	switch {
+	case update.Message != nil:
+		return b.handleMessage(update.Message)
+	case update.CallbackQuery != nil:
+		return b.handleCallback(update.CallbackQuery)
+	default:
+		return errorx.IllegalArgument.New("unsupported update type")
 	}
 }
 
@@ -104,17 +98,17 @@ func (b *TgBot) registerCommands() error {
 
 func (b *TgBot) handleCallback(callbackQuery *tgbotapi.CallbackQuery) error {
 	data := callbackQuery.Data
-	commandName, value, found := strings.Cut(data, SectionSeparator)
+	callbackName, value, found := strings.Cut(data, CallbackSectionSeparator)
 	if !found {
 		return errorx.IllegalArgument.New("unsupported callback data format")
 	}
 
-	comm, exists := b.commands[commandName]
+	handler, exists := b.callbacks[callbackName]
 	if !exists {
-		return errorx.IllegalArgument.New("unsupported command name: name=%v", commandName)
+		return errorx.IllegalArgument.New("unsupported callback name: name=%v", callbackName)
 	}
 
-	err := comm.Callback(callbackQuery, value)
+	err := handler.Handle(callbackQuery, value)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to handle callback")
 	}

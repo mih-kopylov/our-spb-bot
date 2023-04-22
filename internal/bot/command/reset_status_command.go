@@ -70,7 +70,3 @@ func (c *ResetStatusCommand) Handle(message *tgbotapi.Message) error {
 
 	return nil
 }
-
-func (c *ResetStatusCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {
-	return nil
-}
