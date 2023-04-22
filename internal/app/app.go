@@ -3,6 +3,7 @@ package app
 import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/api"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/command"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
@@ -41,13 +42,13 @@ func createApp(version string, commit string) fx.Option {
 
 			service.NewService,
 			fx.Annotate(
-				bot.NewTgBot, fx.ParamTags(``, ``, `group:"commands"`, `group:"forms"`),
+				bot.NewTgBot, fx.ParamTags(``, ``, `group:"commands"`, `group:"callbacks"`, `group:"forms"`),
 			),
 			queue.NewMessageSender,
 			fx.Annotate(
 				spb.NewReqClient, fx.As(new(spb.Client)),
 			),
-
+			//commands
 			fx.Annotate(
 				command.NewStartCommand, fx.ResultTags(`group:"commands"`),
 			),
@@ -66,7 +67,14 @@ func createApp(version string, commit string) fx.Option {
 			fx.Annotate(
 				command.NewFileIdCommand, fx.ResultTags(`group:"commands"`),
 			),
-
+			//callbacks
+			callback.NewMessageCategoryCallback,
+			fx.Annotate(
+				func(cb *callback.MessageCategoryCallback) bot.Callback {
+					return cb
+				}, fx.ResultTags(`group:"callbacks"`),
+			),
+			//forms
 			fx.Annotate(
 				form.NewMessageForm, fx.ResultTags(`group:"forms"`),
 			),

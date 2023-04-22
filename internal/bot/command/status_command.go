@@ -101,7 +101,3 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 
 	return nil
 }
-
-func (c *StatusCommand) Callback(_ *tgbotapi.CallbackQuery, _ string) error {
-	return nil
-}
