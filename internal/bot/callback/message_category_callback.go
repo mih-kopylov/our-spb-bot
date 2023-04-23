@@ -5,7 +5,6 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
@@ -67,17 +66,16 @@ func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, 
 
 		if childFound.Category == nil {
 			replyText = strings.TrimSpace(fmt.Sprintf("Выберите категорию\n%v", childFound.GetFullName()))
-			markup = h.CreateCateogoriesReplyMarkup(userState)
+			markup = h.CreateCategoriesReplyMarkup(userState)
 		} else {
 			replyText = fmt.Sprintf(`Выбранная категория: %v
 Прикрепите фотографии.
 
 Для того, чтобы заменить текст по умолчанию, так же отправьте его в ответ.
 Если текст будет содержать "!", то сообщение будет отправлено с повышенным приоритетом, в первую очередь`, childFound.GetFullName())
-			markup = h.CreateCateogoriesReplyMarkup(userState)
+			markup = h.CreateCategoriesReplyMarkup(userState)
 			userState.SetFormField(state.FormFieldMessageText, childFound.Category.Message)
 			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id)
-			userState.MessageHandlerName = form.MessageFormName
 		}
 
 		err = h.states.SetState(userState)
@@ -95,7 +93,7 @@ func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, 
 	return nil
 }
 
-func (h *MessageCategoryCallback) CreateCateogoriesReplyMarkup(userState *state.UserState) tgbotapi.InlineKeyboardMarkup {
+func (h *MessageCategoryCallback) CreateCategoriesReplyMarkup(userState *state.UserState) tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
 
 	if userState.GetStringFormField(state.FormFieldCurrentCategoryNode) != "" {

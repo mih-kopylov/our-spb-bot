@@ -85,7 +85,7 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 		return errorx.EnhanceStackTrace(err, "failed to render template")
 	}
 
-	err = c.service.SendMessageCustom(message.Chat, writer.String(), func(reply *tgbotapi.MessageConfig) {
+	_, err = c.service.SendMessageCustom(message.Chat, writer.String(), func(reply *tgbotapi.MessageConfig) {
 		reply.ParseMode = tgbotapi.ModeHTML
 		reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 	})

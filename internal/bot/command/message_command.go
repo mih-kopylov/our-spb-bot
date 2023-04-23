@@ -6,6 +6,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
@@ -54,13 +55,14 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 	}
 
 	userState.ClearForm()
+	userState.MessageHandlerName = form.MessageFormName
 	err = c.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
-	return c.service.SendMessageCustom(message.Chat, "Выберите категорию", func(reply *tgbotapi.MessageConfig) {
-		reply.ReplyToMessageID = message.MessageID
-		reply.ReplyMarkup = c.messageCategoryCallback.CreateCateogoriesReplyMarkup(userState)
+	_, err = c.service.SendMessageCustom(message.Chat, "Выберите категорию", func(reply *tgbotapi.MessageConfig) {
+		reply.ReplyMarkup = c.messageCategoryCallback.CreateCategoriesReplyMarkup(userState)
 	})
+	return err
 }

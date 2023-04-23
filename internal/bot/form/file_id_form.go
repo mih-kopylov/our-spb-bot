@@ -41,7 +41,7 @@ func (f *FileIdForm) Handle(message *tgbotapi.Message) error {
 
 		reply := fmt.Sprintf(`FileId: %v
 Url: %v`, maxPhotoSize.FileID, directURL)
-		err = f.service.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
+		_, err = f.service.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {
@@ -56,14 +56,14 @@ Url: %v`, maxPhotoSize.FileID, directURL)
 
 		reply := fmt.Sprintf(`FileId: %v
 Url: %v`, fileId, directURL)
-		err = f.service.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
+		_, err = f.service.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {
 			return err
 		}
 	} else {
-		err := f.service.SendMessageCustom(message.Chat, "Фото не найдено", func(reply *tgbotapi.MessageConfig) {
+		_, err := f.service.SendMessageCustom(message.Chat, "Фото не найдено", func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {

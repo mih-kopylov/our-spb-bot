@@ -10,6 +10,8 @@ type MessageQueue interface {
 	UserMessagesCount(userId int64) (map[Status]int, error)
 	ResetAwaitingAuthorizationMessages(userId int64) error
 	UpdateEachMessage(userId int64, updater func(*Message)) error
+	GetMessage(id string) (*Message, error)
+	DeleteMessage(message *Message) error
 }
 
 type Message struct {
