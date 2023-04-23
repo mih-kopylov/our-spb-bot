@@ -21,11 +21,11 @@ const (
 )
 
 type MessageForm struct {
-	states         state.States
-	service        *service.Service
-	messageQueue   queue.MessageQueue
-	cateogiresTree *category.UserCategoryTreeNode
-	deleteCallback *callback.DeleteMessageCallback
+	states          state.States
+	service         *service.Service
+	messageQueue    queue.MessageQueue
+	categoryService *category.Service
+	deleteCallback  *callback.DeleteMessageCallback
 }
 
 func (f *MessageForm) Name() string {
@@ -33,14 +33,14 @@ func (f *MessageForm) Name() string {
 }
 
 func NewMessageForm(states state.States, service *service.Service,
-	messageQueue queue.MessageQueue, cateogiresTree *category.UserCategoryTreeNode,
+	messageQueue queue.MessageQueue, categoryService *category.Service,
 	deleteCallback *callback.DeleteMessageCallback) bot.Form {
 	return &MessageForm{
-		states:         states,
-		service:        service,
-		messageQueue:   messageQueue,
-		cateogiresTree: cateogiresTree,
-		deleteCallback: deleteCallback,
+		states:          states,
+		service:         service,
+		messageQueue:    messageQueue,
+		categoryService: categoryService,
+		deleteCallback:  deleteCallback,
 	}
 }
 
@@ -103,7 +103,12 @@ Id: %v
 	}
 
 	if message.Location != nil {
-		categoryTreeNode := f.cateogiresTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
+		categoriesTree, err := f.categoryService.ParseCategoriesTree(userState.Categories)
+		if err != nil {
+			return err
+		}
+
+		categoryTreeNode := categoriesTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 		if categoryTreeNode == nil {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
@@ -149,7 +154,7 @@ Id: %v
 			len(queueMessage.Files),
 			queueMessage.Files,
 		)
-		_, err := f.service.SendMessageCustom(
+		_, err = f.service.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyMarkup = f.deleteCallback.CreateReplyMarkup(queueMessage.Id)
 			},

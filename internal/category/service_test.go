@@ -158,7 +158,7 @@ func TestCreateUserCategoryTree(t *testing.T) {
 				return
 			}
 
-			actual, err := createUserCategoryTree(bytes)
+			actual, err := createUserCategoryTree(string(bytes))
 			if test.errorExpected {
 				assert.Error(t, err)
 			} else {

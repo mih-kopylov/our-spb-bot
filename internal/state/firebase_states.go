@@ -4,6 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"github.com/joomcode/errorx"
+	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -52,6 +53,10 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 	err = snapshot.DataTo(&state)
 	if err != nil {
 		return nil, errorx.EnhanceStackTrace(err, "failed to deserialize user state data: userId=%v", userId)
+	}
+
+	if state.Categories == "" {
+		state.Categories = string(category.DefaultCategoriesText)
 	}
 
 	f.debugUserState(&state, "read user state")

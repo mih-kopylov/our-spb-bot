@@ -38,7 +38,7 @@ func createApp(version string, commit string) fx.Option {
 			fx.Annotate(
 				queue.NewFirebaseQueue, fx.As(new(queue.MessageQueue)),
 			),
-			category.NewUserCategoryTreeNode,
+			category.NewService,
 
 			service.NewService,
 			fx.Annotate(

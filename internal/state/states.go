@@ -35,6 +35,7 @@ type UserState struct {
 	SentMessagesCount  int            `firestore:"sentMessagesCount"`
 	LastAccessAt       time.Time      `firestore:"lastAccessAt"`
 	Form               map[string]any `firestore:"form"`
+	Categories         string         `firestore:"categories"`
 }
 
 func (s *UserState) ClearForm() {
