@@ -6,6 +6,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/lithammer/shortuuid/v4"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
@@ -24,6 +25,7 @@ type MessageForm struct {
 	service        *service.Service
 	messageQueue   queue.MessageQueue
 	cateogiresTree *category.UserCategoryTreeNode
+	deleteCallback *callback.DeleteMessageCallback
 }
 
 func (f *MessageForm) Name() string {
@@ -31,12 +33,14 @@ func (f *MessageForm) Name() string {
 }
 
 func NewMessageForm(states state.States, service *service.Service,
-	messageQueue queue.MessageQueue, cateogiresTree *category.UserCategoryTreeNode) bot.Form {
+	messageQueue queue.MessageQueue, cateogiresTree *category.UserCategoryTreeNode,
+	deleteCallback *callback.DeleteMessageCallback) bot.Form {
 	return &MessageForm{
 		states:         states,
 		service:        service,
 		messageQueue:   messageQueue,
 		cateogiresTree: cateogiresTree,
+		deleteCallback: deleteCallback,
 	}
 }
 
@@ -55,11 +59,15 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 		}
 
 		replyText := "Текст сообщения заменён."
-		return f.service.SendMessageCustom(
+		if strings.Contains(message.Text, "!") {
+			replyText += "\nСообщение будет отправлено в первую очередь."
+		}
+		_, err = f.service.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
 			},
 		)
+		return err
 	}
 
 	if len(message.Photo) > 0 {
@@ -75,19 +83,23 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
 
-		reply := fmt.Sprintf(`Фотография добавлена
+		replyText := fmt.Sprintf(`Фотография добавлена.
 
-Размер: %vx%v`, maxPhotoSize.Width, maxPhotoSize.Height)
-		return f.service.SendMessageCustom(
-			message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
+Id: %v
+Размер: %vx%v`, maxPhotoSize.FileID, maxPhotoSize.Width, maxPhotoSize.Height)
+		_, err = f.service.SendMessageCustom(
+			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
-				reply.ReplyMarkup = tgbotapi.NewReplyKeyboard(
+				replyMarkup := tgbotapi.NewReplyKeyboard(
 					tgbotapi.NewKeyboardButtonRow(
 						tgbotapi.NewKeyboardButtonLocation("Отправить сообщение"),
 					),
 				)
+				replyMarkup.OneTimeKeyboard = true
+				reply.ReplyMarkup = replyMarkup
 			},
 		)
+		return err
 	}
 
 	if message.Location != nil {
@@ -96,9 +108,10 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 		}
 
+		text := userState.GetStringFormField(state.FormFieldMessageText)
 		createdAt := time.Now()
 		messageId := createdAt.Format("06-01-02") + "_" + shortuuid.New()
-		if strings.Contains(message.Text, "!") {
+		if strings.Contains(text, "!") {
 			messageId = "00_" + messageId
 		}
 
@@ -107,13 +120,13 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			UserId:     userState.UserId,
 			CategoryId: categoryTreeNode.Category.Id,
 			Files:      userState.GetStringSlice(state.FormFieldFiles),
-			Text:       userState.GetStringFormField(state.FormFieldMessageText),
+			Text:       text,
 			Longitude:  message.Location.Longitude,
 			Latitude:   message.Location.Latitude,
-			CreatedAt:  time.Now(),
+			CreatedAt:  createdAt,
 			Status:     queue.StatusCreated,
 		}
-		err := f.messageQueue.Add(&queueMessage)
+		err = f.messageQueue.Add(&queueMessage)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to add message to queue")
 		}
@@ -127,10 +140,6 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 Текст: %v
 Локация: %v %v
 Файлы: %v шт.: %v
-
-/message - отправить новое обращение 
-
-/status - статус обращений
 `, message.Chat.UserName,
 			queueMessage.Id,
 			queueMessage.CategoryId,
@@ -140,11 +149,23 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 			len(queueMessage.Files),
 			queueMessage.Files,
 		)
-		err = f.service.SendMessageCustom(
+		_, err := f.service.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
-				reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+				reply.ReplyMarkup = f.deleteCallback.CreateReplyMarkup(queueMessage.Id)
 			},
 		)
+		if err != nil {
+			return err
+		}
+
+		nextCommandsMessageText := `/message - отправить новое обращение 
+
+/status - статус обращений
+`
+
+		_, err = f.service.SendMessageCustom(message.Chat, nextCommandsMessageText, func(reply *tgbotapi.MessageConfig) {
+			reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+		})
 		if err != nil {
 			return err
 		}

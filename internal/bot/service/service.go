@@ -17,18 +17,19 @@ func NewService(api *tgbotapi.BotAPI) *Service {
 }
 
 func (s *Service) SendMessage(chat *tgbotapi.Chat, text string) error {
-	return s.SendMessageCustom(chat, text, func(reply *tgbotapi.MessageConfig) {})
+	_, err := s.SendMessageCustom(chat, text, func(reply *tgbotapi.MessageConfig) {})
+	return err
 }
 
-func (s *Service) SendMessageCustom(chat *tgbotapi.Chat, text string, messageAdjuster func(reply *tgbotapi.MessageConfig)) error {
+func (s *Service) SendMessageCustom(chat *tgbotapi.Chat, text string, messageAdjuster func(reply *tgbotapi.MessageConfig)) (*tgbotapi.Message, error) {
 	message := tgbotapi.NewMessage(chat.ID, text)
 	messageAdjuster(&message)
-	_, err := s.api.Send(message)
+	result, err := s.api.Send(message)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to send reply")
+		return nil, errorx.EnhanceStackTrace(err, "failed to send reply")
 	}
 
-	return nil
+	return &result, nil
 }
 
 func (s *Service) Send(chattable tgbotapi.Chattable) error {

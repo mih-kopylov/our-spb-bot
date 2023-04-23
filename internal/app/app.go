@@ -74,6 +74,12 @@ func createApp(version string, commit string) fx.Option {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
+			callback.NewDeleteMessageCallback,
+			fx.Annotate(
+				func(cb *callback.DeleteMessageCallback) bot.Callback {
+					return cb
+				}, fx.ResultTags(`group:"callbacks"`),
+			),
 			//forms
 			fx.Annotate(
 				form.NewMessageForm, fx.ResultTags(`group:"forms"`),

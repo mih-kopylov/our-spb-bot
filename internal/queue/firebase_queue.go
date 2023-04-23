@@ -5,6 +5,8 @@ import (
 	"context"
 	"github.com/joomcode/errorx"
 	"github.com/sirupsen/logrus"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
 	"time"
 )
@@ -142,6 +144,30 @@ func (q *FirebaseQueue) UserMessagesCount(userId int64) (map[Status]int, error) 
 	}
 
 	return result, nil
+}
+
+func (q *FirebaseQueue) GetMessage(id string) (*Message, error) {
+	snapshot, err := q.fc.Collection(collection).Doc(id).Get(context.Background())
+	if status.Code(err) == codes.NotFound {
+		return nil, errorx.EnhanceStackTrace(err, "message not found")
+	}
+
+	var message Message
+	err = snapshot.DataTo(&message)
+	if err != nil {
+		return nil, errorx.EnhanceStackTrace(err, "failed to read a message")
+	}
+
+	return &message, nil
+}
+
+func (q *FirebaseQueue) DeleteMessage(message *Message) error {
+	_, err := q.fc.Collection(collection).Doc(message.Id).Delete(context.Background())
+	if err != nil {
+		return errorx.EnhanceStackTrace(err, "failed to delete a message")
+	}
+
+	return nil
 }
 
 func (q *FirebaseQueue) debugMessage(message *Message, text string) {
