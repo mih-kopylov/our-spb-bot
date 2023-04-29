@@ -57,9 +57,8 @@ func (f *UploadCategoriesForm) Handle(message *tgbotapi.Message) error {
 			reply.ReplyToMessageID = message.MessageID
 		})
 		if err != nil {
-
+			return err
 		}
-		return err
 	}
 
 	userState.Categories = string(fileContent)
