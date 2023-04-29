@@ -2,7 +2,6 @@ package category
 
 import (
 	"github.com/joomcode/errorx"
-	"github.com/lithammer/shortuuid/v4"
 	"gopkg.in/yaml.v3"
 	"strconv"
 )
@@ -91,7 +90,6 @@ func parseChildTreeNode(yamlNode *yaml.Node, name string, parent *UserCategoryTr
 		message := yamlNode.Content[3].Value
 
 		return &UserCategoryTreeNode{
-			Id:       shortuuid.New(),
 			Name:     name,
 			Category: &UserCategory{Id: id, Message: message},
 			Parent:   parent,
@@ -100,7 +98,6 @@ func parseChildTreeNode(yamlNode *yaml.Node, name string, parent *UserCategoryTr
 	}
 
 	result := &UserCategoryTreeNode{
-		Id:       shortuuid.New(),
 		Name:     name,
 		Category: nil,
 		Parent:   parent,

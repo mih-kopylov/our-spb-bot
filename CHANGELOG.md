@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ability to manage own categories
+
 ## [1.1.0] - 2023-04-23
 
 ### Added
