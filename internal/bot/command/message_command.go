@@ -8,7 +8,6 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
-	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
@@ -19,15 +18,13 @@ const (
 type MessageCommand struct {
 	states                  state.States
 	service                 *service.Service
-	cateogiresTree          *category.UserCategoryTreeNode
 	messageCategoryCallback *callback.MessageCategoryCallback
 }
 
-func NewMessageCommand(states state.States, service *service.Service, cateogiresTree *category.UserCategoryTreeNode, messageCategoryCallback *callback.MessageCategoryCallback) bot.Command {
+func NewMessageCommand(states state.States, service *service.Service, messageCategoryCallback *callback.MessageCategoryCallback) bot.Command {
 	return &MessageCommand{
 		states:                  states,
 		service:                 service,
-		cateogiresTree:          cateogiresTree,
 		messageCategoryCallback: messageCategoryCallback,
 	}
 }

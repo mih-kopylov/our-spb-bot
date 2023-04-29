@@ -8,6 +8,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"github.com/sirupsen/logrus"
 	"strings"
 )
 
@@ -17,16 +18,16 @@ const (
 )
 
 type MessageCategoryCallback struct {
-	states         state.States
-	service        *service.Service
-	cateogiresTree *category.UserCategoryTreeNode
+	states          state.States
+	service         *service.Service
+	categoryService *category.Service
 }
 
-func NewMessageCategoryCallback(states state.States, service *service.Service, cateogiresTree *category.UserCategoryTreeNode) *MessageCategoryCallback {
+func NewMessageCategoryCallback(states state.States, service *service.Service, categoryService *category.Service) *MessageCategoryCallback {
 	return &MessageCategoryCallback{
-		states:         states,
-		service:        service,
-		cateogiresTree: cateogiresTree,
+		states:          states,
+		service:         service,
+		categoryService: categoryService,
 	}
 }
 
@@ -40,10 +41,15 @@ func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, 
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
+	categoriesTree, err := h.categoryService.ParseCategoriesTree(userState.Categories)
+	if err != nil {
+		return err
+	}
+
 	var markup tgbotapi.InlineKeyboardMarkup
 	var replyText string
 	var childFound *category.UserCategoryTreeNode
-	currentCategoryNode := h.cateogiresTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
+	currentCategoryNode := categoriesTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
 	if data == DataBack {
 		if currentCategoryNode.Parent == nil {
 			return errorx.AssertionFailed.New("can't go back more than a root")
@@ -51,8 +57,9 @@ func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, 
 		childFound = currentCategoryNode.Parent
 	} else {
 		for _, child := range currentCategoryNode.Children {
-			if child.Id == data {
+			if child.Id() == data {
 				childFound = child
+				break
 			}
 		}
 	}
@@ -62,20 +69,25 @@ func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, 
 		markup = tgbotapi.NewInlineKeyboardMarkup()
 		markup.InlineKeyboard = [][]tgbotapi.InlineKeyboardButton{}
 	} else {
-		userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id)
+		userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id())
 
 		if childFound.Category == nil {
 			replyText = strings.TrimSpace(fmt.Sprintf("Выберите категорию\n%v", childFound.GetFullName()))
 			markup = h.CreateCategoriesReplyMarkup(userState)
 		} else {
 			replyText = fmt.Sprintf(`Выбранная категория: %v
+Текст по умолчанию: %v
+
 Прикрепите фотографии.
 
 Для того, чтобы заменить текст по умолчанию, так же отправьте его в ответ.
-Если текст будет содержать "!", то сообщение будет отправлено с повышенным приоритетом, в первую очередь`, childFound.GetFullName())
+Если текст будет содержать "!", то сообщение будет отправлено с повышенным приоритетом, в первую очередь`,
+				childFound.GetFullName(),
+				childFound.Category.Message,
+			)
 			markup = h.CreateCategoriesReplyMarkup(userState)
 			userState.SetFormField(state.FormFieldMessageText, childFound.Category.Message)
-			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id)
+			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id())
 		}
 
 		err = h.states.SetState(userState)
@@ -95,28 +107,37 @@ func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, 
 
 func (h *MessageCategoryCallback) CreateCategoriesReplyMarkup(userState *state.UserState) tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
+	result.InlineKeyboard = [][]tgbotapi.InlineKeyboardButton{}
 
-	if userState.GetStringFormField(state.FormFieldCurrentCategoryNode) != "" {
+	currentCategoryNodeId := userState.GetStringFormField(state.FormFieldCurrentCategoryNode)
+	if currentCategoryNodeId != "" {
 		backButton := tgbotapi.NewInlineKeyboardButtonData("⬆ Вверх", MessageCategoryCallbackName+bot.CallbackSectionSeparator+DataBack)
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(backButton))
 	}
 
-	currentCategoryNode := h.cateogiresTree.FindNodeById(userState.GetStringFormField(state.FormFieldCurrentCategoryNode))
+	categoriesTree, err := h.categoryService.ParseCategoriesTree(userState.Categories)
+	if err != nil {
+		logrus.WithError(err).Error("failed to parse user categories")
+	} else {
+		currentCategoryNode := categoriesTree.FindNodeById(currentCategoryNodeId)
+		if currentCategoryNode == nil {
+			logrus.WithField("id", currentCategoryNodeId).Error("can't find current category node by id")
+		} else {
+			buttonsPerRow := 2
 
-	buttonsPerRow := 2
+			for i := 0; i < len(currentCategoryNode.Children); i += buttonsPerRow {
+				var row []tgbotapi.InlineKeyboardButton
+				for j := 0; j < buttonsPerRow; j++ {
+					if i+j < len(currentCategoryNode.Children) {
+						child := currentCategoryNode.Children[i+j]
+						itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCategoryCallbackName+bot.CallbackSectionSeparator+child.Id())
+						row = append(row, itemButton)
+					}
+				}
 
-	for i := 0; i < len(currentCategoryNode.Children); i += buttonsPerRow {
-		var row []tgbotapi.InlineKeyboardButton
-		for j := 0; j < buttonsPerRow; j++ {
-			if i+j < len(currentCategoryNode.Children) {
-				child := currentCategoryNode.Children[i+j]
-				itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCategoryCallbackName+bot.CallbackSectionSeparator+child.Id)
-				row = append(row, itemButton)
+				result.InlineKeyboard = append(result.InlineKeyboard, row)
 			}
 		}
-
-		result.InlineKeyboard = append(result.InlineKeyboard, row)
 	}
-
 	return result
 }

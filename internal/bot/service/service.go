@@ -2,8 +2,10 @@ package service
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
+	"net/http"
 )
 
 type Service struct {
@@ -57,4 +59,41 @@ func (s *Service) DeleteMessage(message *tgbotapi.Message) error {
 
 func (s *Service) GetFileDirectUrl(fileId string) (string, error) {
 	return s.api.GetFileDirectURL(fileId)
+}
+
+func (s *Service) SendDocument(chat *tgbotapi.Chat, bytes []byte, name string) error {
+	file := tgbotapi.FileBytes{
+		Name:  name,
+		Bytes: bytes,
+	}
+	document := tgbotapi.NewDocument(chat.ID, file)
+	_, err := s.api.Send(document)
+	if err != nil {
+		return errorx.EnhanceStackTrace(err, "failed to send a document")
+	}
+
+	return nil
+}
+
+func (s *Service) DownloadFile(fileId string) ([]byte, error) {
+	fileUrl, err := s.api.GetFileDirectURL(fileId)
+	if err != nil {
+		return nil, errorx.EnhanceStackTrace(err, "failed to get file url")
+	}
+
+	response, err := req.R().Get(fileUrl)
+	if err != nil {
+		return nil, errorx.EnhanceStackTrace(err, "failed to donwload file")
+	}
+
+	fileBytes, err := response.ToBytes()
+	if err != nil {
+		return nil, errorx.EnhanceStackTrace(err, "failed to get response bytes: code=%v", response.StatusCode)
+	}
+
+	if response.StatusCode != http.StatusOK {
+		return nil, errorx.IllegalArgument.New("failed to download file: fileId=%v, fileUrl=%v, response=%v", fileId, fileUrl, fileBytes)
+	}
+
+	return fileBytes, nil
 }

@@ -3,7 +3,6 @@ package queue
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
@@ -12,7 +11,6 @@ import (
 	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"math"
-	"net/http"
 	"time"
 )
 
@@ -245,26 +243,12 @@ func (s *MessageSender) returnMessage(message *Message, status Status, descripti
 func (s *MessageSender) getFiles(message *Message) (map[string][]byte, error) {
 	result := map[string][]byte{}
 	for i, fileId := range message.Files {
-		fileUrl, err := s.api.GetFileDirectURL(fileId)
+		fileBytes, err := s.service.DownloadFile(fileId)
 		if err != nil {
-			return nil, errorx.EnhanceStackTrace(err, "failed to get file url")
+			return nil, err
 		}
 
-		response, err := req.R().Get(fileUrl)
-		if err != nil {
-			return nil, errorx.EnhanceStackTrace(err, "failed to donwload file")
-		}
-
-		responseBytes, err := response.ToBytes()
-		if err != nil {
-			return nil, errorx.EnhanceStackTrace(err, "failed to get response bytes: code=%v", response.StatusCode)
-		}
-
-		if response.StatusCode != http.StatusOK {
-			return nil, errorx.IllegalArgument.New("failed to download file: fileId=%v, fileUrl=%v, response=%v", fileId, fileUrl, responseBytes)
-		}
-
-		result[fmt.Sprintf("file_%v.jpg", i)] = responseBytes
+		result[fmt.Sprintf("file_%v.jpg", i)] = fileBytes
 	}
 	return result, nil
 }

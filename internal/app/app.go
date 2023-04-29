@@ -38,7 +38,7 @@ func createApp(version string, commit string) fx.Option {
 			fx.Annotate(
 				queue.NewFirebaseQueue, fx.As(new(queue.MessageQueue)),
 			),
-			category.NewUserCategoryTreeNode,
+			category.NewService,
 
 			service.NewService,
 			fx.Annotate(
@@ -67,6 +67,9 @@ func createApp(version string, commit string) fx.Option {
 			fx.Annotate(
 				command.NewFileIdCommand, fx.ResultTags(`group:"commands"`),
 			),
+			fx.Annotate(
+				command.NewSettingsCommand, fx.ResultTags(`group:"commands"`),
+			),
 			//callbacks
 			callback.NewMessageCategoryCallback,
 			fx.Annotate(
@@ -77,6 +80,18 @@ func createApp(version string, commit string) fx.Option {
 			callback.NewDeleteMessageCallback,
 			fx.Annotate(
 				func(cb *callback.DeleteMessageCallback) bot.Callback {
+					return cb
+				}, fx.ResultTags(`group:"callbacks"`),
+			),
+			callback.NewSettingsCallback,
+			fx.Annotate(
+				func(cb *callback.SettingsCallback) bot.Callback {
+					return cb
+				}, fx.ResultTags(`group:"callbacks"`),
+			),
+			callback.NewSettingsCategoriesCallback,
+			fx.Annotate(
+				func(cb *callback.SettingsCategoriesCallback) bot.Callback {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
@@ -92,6 +107,9 @@ func createApp(version string, commit string) fx.Option {
 			),
 			fx.Annotate(
 				form.NewFileIdForm, fx.ResultTags(`group:"forms"`),
+			),
+			fx.Annotate(
+				form.NewUploadCategoriesForm, fx.ResultTags(`group:"forms"`),
 			),
 		),
 		fx.Invoke(func(bot *bot.TgBot) error {

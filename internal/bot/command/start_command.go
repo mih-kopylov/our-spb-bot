@@ -7,6 +7,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
+	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"strings"
@@ -64,6 +65,9 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 			message.Chat.Type, message.Chat.Title))
 	}
 	userState.MessageHandlerName = ""
+	if userState.Categories == "" {
+		userState.Categories = string(category.DefaultCategoriesText)
+	}
 	err = c.states.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")

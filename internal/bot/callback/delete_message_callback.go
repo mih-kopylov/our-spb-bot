@@ -6,7 +6,6 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
-	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
@@ -16,18 +15,16 @@ const (
 )
 
 type DeleteMessageCallback struct {
-	states         state.States
-	service        *service.Service
-	messageQueue   queue.MessageQueue
-	cateogiresTree *category.UserCategoryTreeNode
+	states       state.States
+	service      *service.Service
+	messageQueue queue.MessageQueue
 }
 
-func NewDeleteMessageCallback(states state.States, service *service.Service, messageQueue queue.MessageQueue, cateogiresTree *category.UserCategoryTreeNode) *DeleteMessageCallback {
+func NewDeleteMessageCallback(states state.States, service *service.Service, messageQueue queue.MessageQueue) *DeleteMessageCallback {
 	return &DeleteMessageCallback{
-		states:         states,
-		service:        service,
-		messageQueue:   messageQueue,
-		cateogiresTree: cateogiresTree,
+		states:       states,
+		service:      service,
+		messageQueue: messageQueue,
 	}
 }
 
