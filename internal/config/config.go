@@ -13,7 +13,8 @@ type Config struct {
 	OurSpbClientId         string        `env:"OURSPB_CLIENT_ID,required"`
 	OurSpbSecret           string        `env:"OURSPB_SECRET,required"`
 	FirebaseServiceAccount string        `env:"FIREBASE_SERVICE_ACCOUNT,required"`
-	SleepDuration          time.Duration `env:"SLEEP_DURATION,required"`
+	SenderEnabled          bool          `env:"SENDER_ENABLED"`
+	SenderSleepDuration    time.Duration `env:"SENDER_SLEEP_DURATION,required"`
 }
 
 func NewConfig() (*Config, error) {
