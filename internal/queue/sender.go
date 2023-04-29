@@ -84,7 +84,7 @@ func (s *MessageSender) sendNextMessage() {
 		return
 	}
 
-	account, err := s.chooseAccount(userState, message)
+	account, appropriateAccountsCount, err := s.chooseAccount(userState, message)
 	if err != nil {
 		if errorx.IsOfType(err, ErrNoAccounts) || errorx.IsOfType(err, ErrAllAccountsDisabled) {
 			logrus.Error(errorx.EnhanceStackTrace(err, "failed to choose an account"))
@@ -93,7 +93,9 @@ func (s *MessageSender) sendNextMessage() {
 		}
 		if errorx.IsOfType(err, ErrAllAccountsRateLimited) {
 			logrus.WithField("id", message.Id).Info("user is rate limited")
-			message.RetryAfter = userState.Accounts[0].RateLimitedUntil
+			message.RetryAfter = lo.MinBy(userState.Accounts, func(a state.Account, b state.Account) bool {
+				return a.RateLimitedUntil.Before(b.RateLimitedUntil)
+			}).RateLimitedUntil
 			s.returnMessage(message, StatusCreated, "user is rate limited")
 			return
 		}
@@ -119,7 +121,7 @@ func (s *MessageSender) sendNextMessage() {
 	sentMessageResponse, err := s.spbClient.Send(account.Token, request, files)
 	if err != nil {
 		logrus.WithField("id", message.Id).Warn(errorx.EnhanceStackTrace(err, "failed to send message"))
-		s.handleMessageSendingError(err, userState, account, message)
+		s.handleMessageSendingError(err, userState, account, appropriateAccountsCount, message)
 		return
 	}
 
@@ -145,7 +147,7 @@ Id: %v
 	logrus.WithField("id", message.Id).Debug("message sent")
 }
 
-func (s *MessageSender) handleMessageSendingError(err error, userState *state.UserState, account *state.Account, message *Message) {
+func (s *MessageSender) handleMessageSendingError(err error, userState *state.UserState, account *state.Account, appropriateAccountsCount int, message *Message) {
 	if errorx.IsOfType(err, spb.ErrUnauthorized) {
 		account.Token = ""
 		err = s.states.SetState(userState)
@@ -172,7 +174,10 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 			logrus.Error(errorx.EnhanceStackTrace(err, "failed to set user state"))
 			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state: "+err.Error())
 		} else {
-			message.RetryAfter = nextTryTime
+			if appropriateAccountsCount == 1 {
+				//delay message only in case there are no other accounts that may be used to sent it
+				message.RetryAfter = nextTryTime
+			}
 			s.returnMessage(message, StatusCreated, "too many requests")
 		}
 	} else {
@@ -261,16 +266,18 @@ func (s *MessageSender) shiftLongitudeMeters(latitude float64, longitude float64
 	return longitude - (metersFloat*oneMeter)/math.Cos(latitude*(math.Pi/180))
 }
 
-func (s *MessageSender) chooseAccount(userState *state.UserState, message *Message) (*state.Account, error) {
+func (s *MessageSender) chooseAccount(userState *state.UserState, message *Message) (*state.Account, int, error) {
 	if len(userState.Accounts) == 0 {
-		return nil, ErrNoAccounts.New("no accounts found")
+		return nil, 0, ErrNoAccounts.New("no accounts found")
 	}
 
 	if len(lo.Filter(userState.Accounts, func(item state.Account, index int) bool {
 		return item.State == state.AccountStateEnabled
 	})) == 0 {
-		return nil, ErrAllAccountsDisabled.New("all accounts disabled")
+		return nil, 0, ErrAllAccountsDisabled.New("all accounts disabled")
 	}
+
+	var appropriateAccounts []*state.Account
 
 	for i, account := range userState.Accounts {
 		if account.State == state.AccountStateDisabled {
@@ -291,8 +298,12 @@ func (s *MessageSender) chooseAccount(userState *state.UserState, message *Messa
 			}
 		}
 
-		return &userState.Accounts[i], nil
+		appropriateAccounts = append(appropriateAccounts, &userState.Accounts[i])
 	}
 
-	return nil, ErrAllAccountsRateLimited.New("all accounts are rate limited")
+	if len(appropriateAccounts) == 0 {
+		return nil, 0, ErrAllAccountsRateLimited.New("all accounts are rate limited")
+	}
+
+	return appropriateAccounts[0], len(appropriateAccounts), nil
 }
