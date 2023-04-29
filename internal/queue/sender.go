@@ -53,14 +53,14 @@ func NewMessageSender(conf *config.Config, states state.States, queue MessageQue
 func (s *MessageSender) Start() error {
 	if s.enabled {
 		logrus.Info("starting sender")
+		go func() {
+			for {
+				s.sendNextMessage()
+			}
+		}()
 	} else {
 		logrus.Warn("sender is disabled")
 	}
-	go func() {
-		for {
-			s.sendNextMessage()
-		}
-	}()
 	return nil
 }
 
