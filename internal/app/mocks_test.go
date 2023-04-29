@@ -93,7 +93,7 @@ func (m *Mocks) BeforeAll(t *testing.T) {
 	t.Setenv("OURSPB_SECRET", "OURSPB_SECRET")
 	t.Setenv("FIRESTORE_EMULATOR_HOST", fmt.Sprintf("localhost:%v", m.FirestorePort.Port()))
 	t.Setenv("FIREBASE_SERVICE_ACCOUNT", base64.StdEncoding.EncodeToString([]byte("FIREBASE_SERVICE_ACCOUNT")))
-	t.Setenv("SLEEP_DURATION", "1s")
+	t.Setenv("SENDER_SLEEP_DURATION", "1s")
 }
 
 func teardown(t *testing.T, containers ...testcontainers.Container) {

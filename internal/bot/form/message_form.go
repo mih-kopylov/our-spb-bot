@@ -86,7 +86,12 @@ func (f *MessageForm) Handle(message *tgbotapi.Message) error {
 		replyText := fmt.Sprintf(`Фотография добавлена.
 
 Id: %v
-Размер: %vx%v`, maxPhotoSize.FileID, maxPhotoSize.Width, maxPhotoSize.Height)
+Размер: %vx%v
+Вес: %v байт`,
+			maxPhotoSize.FileID,
+			maxPhotoSize.Width,
+			maxPhotoSize.Height,
+			maxPhotoSize.FileSize)
 		_, err = f.service.SendMessageCustom(
 			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID

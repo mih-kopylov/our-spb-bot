@@ -20,6 +20,7 @@ type MessageSender struct {
 	spbClient     spb.Client
 	api           *tgbotapi.BotAPI
 	service       *service.Service
+	enabled       bool
 	sleepDuration time.Duration
 }
 
@@ -42,16 +43,22 @@ func NewMessageSender(conf *config.Config, states state.States, queue MessageQue
 		spbClient:     spbClient,
 		api:           api,
 		service:       service,
-		sleepDuration: conf.SleepDuration,
+		enabled:       conf.SenderEnabled,
+		sleepDuration: conf.SenderSleepDuration,
 	}
 }
 
 func (s *MessageSender) Start() error {
-	go func() {
-		for {
-			s.sendNextMessage()
-		}
-	}()
+	if s.enabled {
+		logrus.Info("starting sender")
+		go func() {
+			for {
+				s.sendNextMessage()
+			}
+		}()
+	} else {
+		logrus.Warn("sender is disabled")
+	}
 	return nil
 }
 

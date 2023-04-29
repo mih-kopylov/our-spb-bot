@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Ability to manage own categories
 
+## [1.2.1] - 2023-04-29
+
+### Fixed
+
+- Sent message id parsing from response
+
+## [1.2.0] - 2023-04-29
+
+### Added
+
+- Ability to start bot without sender
+
+### Changed
+
+- `SLEEP_DURATION` environment variable is renamed to `SENDER_SLEEP_DURATION`
+
 ## [1.1.0] - 2023-04-23
 
 ### Added
