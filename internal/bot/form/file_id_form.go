@@ -39,8 +39,12 @@ func (f *FileIdForm) Handle(message *tgbotapi.Message) error {
 			return err
 		}
 
-		reply := fmt.Sprintf(`FileId: %v
-Url: %v`, maxPhotoSize.FileID, directURL)
+		reply := fmt.Sprintf(`Id: %v
+Вес: %v байт
+Url: %v`,
+			maxPhotoSize.FileID,
+			maxPhotoSize.FileSize,
+			directURL)
 		_, err = f.service.SendMessageCustom(message.Chat, reply, func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
