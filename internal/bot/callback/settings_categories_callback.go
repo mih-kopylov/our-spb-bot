@@ -55,7 +55,7 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 			return err
 		}
 
-		return h.service.SendMessage(callbackQuery.Message.Chat, `В документе выше структура категорий.
+		return h.service.SendMessage(callbackQuery.Message.Chat, `В выложенном документе структура категорий.
 Его нужно скачать, отредактировать и загрузить обновлённые категории.`)
 	case UploadButtonId:
 		userState.MessageHandlerName = "UploadCategoriesForm"
@@ -90,9 +90,23 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 	}
 }
 
+func (h *SettingsCategoriesCallback) HandleCategorySettingsButtonClick(callbackQuery *tgbotapi.CallbackQuery) error {
+	reply := tgbotapi.NewEditMessageTextAndMarkup(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID,
+		`Настройка категорий.
+
+Для того, чтобы настроить удобные для себя категории, нужно скачать категории портала и свои категории.
+В файле со своими категориями упорядочить их так, как удобно.
+После этого загрузить файл со своими категориями обратно.`, h.CreateReplyMarkup())
+	err := h.service.Send(reply)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (h *SettingsCategoriesCallback) CreateReplyMarkup() tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
-	downloadButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+DownloadButtonId)
+	downloadButton := tgbotapi.NewInlineKeyboardButtonData("Скачать свои категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+DownloadButtonId)
 	uploadButton := tgbotapi.NewInlineKeyboardButtonData("Загрузить новые категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+UploadButtonId)
 	resetButton := tgbotapi.NewInlineKeyboardButtonData("Сбросить на значения по умолчанию", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+ResetButtonId)
 	downloadPortalButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории портала", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+DownloadPortalButtonId)

@@ -31,13 +31,7 @@ func (h *SettingsCallback) Name() string {
 func (h *SettingsCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	switch data {
 	case CategoriesButtonId:
-		reply := tgbotapi.NewEditMessageTextAndMarkup(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID,
-			`Настройка категорий`, h.settingsCategoriesCallback.CreateReplyMarkup())
-		err := h.service.Send(reply)
-		if err != nil {
-			return err
-		}
-		return nil
+		return h.settingsCategoriesCallback.HandleCategorySettingsButtonClick(callbackQuery)
 	default:
 		return errorx.IllegalArgument.New("unsupported data: %v", data)
 	}
