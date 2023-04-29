@@ -1,12 +1,14 @@
 package callback
 
 import (
+	"encoding/json"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
+	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
@@ -15,19 +17,22 @@ const (
 	DownloadButtonId               = "Download"
 	UploadButtonId                 = "Upload"
 	ResetButtonId                  = "Reset"
+	DownloadPortalButtonId         = "DownloadPortal"
 )
 
 type SettingsCategoriesCallback struct {
 	states       state.States
 	service      *service.Service
 	messageQueue queue.MessageQueue
+	spbClient    spb.Client
 }
 
-func NewSettingsCategoriesCallback(states state.States, service *service.Service, messageQueue queue.MessageQueue) *SettingsCategoriesCallback {
+func NewSettingsCategoriesCallback(states state.States, service *service.Service, messageQueue queue.MessageQueue, spbClient spb.Client) *SettingsCategoriesCallback {
 	return &SettingsCategoriesCallback{
 		states:       states,
 		service:      service,
 		messageQueue: messageQueue,
+		spbClient:    spbClient,
 	}
 }
 
@@ -68,6 +73,18 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 		}
 
 		return h.service.SendMessage(callbackQuery.Message.Chat, "Установлены категории по умолчанию")
+	case DownloadPortalButtonId:
+		reasons, err := h.spbClient.GetReasons()
+		if err != nil {
+			return err
+		}
+
+		bytes, err := json.MarshalIndent(reasons, "", "  ")
+		if err != nil {
+			return errorx.EnhanceStackTrace(err, "failed to marshall portal categories")
+		}
+
+		return h.service.SendDocument(callbackQuery.Message.Chat, bytes, "portalCategories.json")
 	default:
 		return errorx.IllegalArgument.New("unsupported data: %v", data)
 	}
@@ -78,7 +95,9 @@ func (h *SettingsCategoriesCallback) CreateReplyMarkup() tgbotapi.InlineKeyboard
 	downloadButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+DownloadButtonId)
 	uploadButton := tgbotapi.NewInlineKeyboardButtonData("Загрузить новые категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+UploadButtonId)
 	resetButton := tgbotapi.NewInlineKeyboardButtonData("Сбросить на значения по умолчанию", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+ResetButtonId)
+	downloadPortalButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории портала", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+DownloadPortalButtonId)
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(downloadButton, uploadButton))
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(resetButton))
+	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(downloadPortalButton))
 	return result
 }
