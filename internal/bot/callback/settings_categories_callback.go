@@ -7,32 +7,29 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
-	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 )
 
 const (
 	SettingsCategoriesCallbackName = "SettingsCategoriesCallback"
-	DownloadButtonId               = "Download"
-	UploadButtonId                 = "Upload"
-	ResetButtonId                  = "Reset"
-	DownloadPortalButtonId         = "DownloadPortal"
+	downloadButtonId               = "Download"
+	uploadButtonId                 = "Upload"
+	resetButtonId                  = "Reset"
+	downloadPortalButtonId         = "DownloadPortal"
 )
 
 type SettingsCategoriesCallback struct {
-	states       state.States
-	service      *service.Service
-	messageQueue queue.MessageQueue
-	spbClient    spb.Client
+	states    state.States
+	service   *service.Service
+	spbClient spb.Client
 }
 
-func NewSettingsCategoriesCallback(states state.States, service *service.Service, messageQueue queue.MessageQueue, spbClient spb.Client) *SettingsCategoriesCallback {
+func NewSettingsCategoriesCallback(states state.States, service *service.Service, spbClient spb.Client) *SettingsCategoriesCallback {
 	return &SettingsCategoriesCallback{
-		states:       states,
-		service:      service,
-		messageQueue: messageQueue,
-		spbClient:    spbClient,
+		states:    states,
+		service:   service,
+		spbClient: spbClient,
 	}
 }
 
@@ -47,7 +44,7 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 	}
 
 	switch data {
-	case DownloadButtonId:
+	case downloadButtonId:
 		bytes := []byte(userState.Categories)
 		fileName := "categories.yaml"
 		err = h.service.SendDocument(callbackQuery.Message.Chat, bytes, fileName)
@@ -57,7 +54,7 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 
 		return h.service.SendMessage(callbackQuery.Message.Chat, `В выложенном документе структура категорий.
 Его нужно скачать, отредактировать и загрузить обновлённые категории.`)
-	case UploadButtonId:
+	case uploadButtonId:
 		userState.MessageHandlerName = "UploadCategoriesForm"
 		err = h.states.SetState(userState)
 		if err != nil {
@@ -65,7 +62,7 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 		}
 
 		return h.service.SendMessage(callbackQuery.Message.Chat, "Загрузите документ с категориями")
-	case ResetButtonId:
+	case resetButtonId:
 		userState.Categories = string(category.DefaultCategoriesText)
 		err = h.states.SetState(userState)
 		if err != nil {
@@ -73,7 +70,7 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 		}
 
 		return h.service.SendMessage(callbackQuery.Message.Chat, "Установлены категории по умолчанию")
-	case DownloadPortalButtonId:
+	case downloadPortalButtonId:
 		reasons, err := h.spbClient.GetReasons()
 		if err != nil {
 			return err
@@ -106,10 +103,10 @@ func (h *SettingsCategoriesCallback) HandleCategorySettingsButtonClick(callbackQ
 
 func (h *SettingsCategoriesCallback) CreateReplyMarkup() tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
-	downloadButton := tgbotapi.NewInlineKeyboardButtonData("Скачать свои категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+DownloadButtonId)
-	uploadButton := tgbotapi.NewInlineKeyboardButtonData("Загрузить новые категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+UploadButtonId)
-	resetButton := tgbotapi.NewInlineKeyboardButtonData("Сбросить на значения по умолчанию", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+ResetButtonId)
-	downloadPortalButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории портала", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+DownloadPortalButtonId)
+	downloadButton := tgbotapi.NewInlineKeyboardButtonData("Скачать свои категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+downloadButtonId)
+	uploadButton := tgbotapi.NewInlineKeyboardButtonData("Загрузить новые категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+uploadButtonId)
+	resetButton := tgbotapi.NewInlineKeyboardButtonData("Сбросить на значения по умолчанию", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+resetButtonId)
+	downloadPortalButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории портала", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+downloadPortalButtonId)
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(downloadButton, uploadButton))
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(resetButton))
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(downloadPortalButton))

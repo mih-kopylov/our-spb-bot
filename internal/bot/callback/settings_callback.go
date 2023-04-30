@@ -9,18 +9,21 @@ import (
 
 const (
 	SettingsCallbackName = "SettingsCallback"
-	CategoriesButtonId   = "Categories"
+	categoriesButtonId   = "Categories"
+	accountsButtonId     = "Accounts"
 )
 
 type SettingsCallback struct {
 	service                    *service.Service
 	settingsCategoriesCallback *SettingsCategoriesCallback
+	settingsAccountsCallback   *SettingsAccountsCallback
 }
 
-func NewSettingsCallback(service *service.Service, settingsCategoriesCallback *SettingsCategoriesCallback) *SettingsCallback {
+func NewSettingsCallback(service *service.Service, settingsCategoriesCallback *SettingsCategoriesCallback, settingsAccountsCallback *SettingsAccountsCallback) *SettingsCallback {
 	return &SettingsCallback{
 		service:                    service,
 		settingsCategoriesCallback: settingsCategoriesCallback,
+		settingsAccountsCallback:   settingsAccountsCallback,
 	}
 }
 
@@ -30,8 +33,10 @@ func (h *SettingsCallback) Name() string {
 
 func (h *SettingsCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data string) error {
 	switch data {
-	case CategoriesButtonId:
+	case categoriesButtonId:
 		return h.settingsCategoriesCallback.HandleCategorySettingsButtonClick(callbackQuery)
+	case accountsButtonId:
+		return h.settingsAccountsCallback.HandleCategoryAccountsButtonClick(callbackQuery)
 	default:
 		return errorx.IllegalArgument.New("unsupported data: %v", data)
 	}
@@ -39,7 +44,8 @@ func (h *SettingsCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data st
 
 func (h *SettingsCallback) CreateReplyMarkup() tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
-	categoriesButton := tgbotapi.NewInlineKeyboardButtonData("Категории", SettingsCallbackName+bot.CallbackSectionSeparator+CategoriesButtonId)
-	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(categoriesButton))
+	categoriesButton := tgbotapi.NewInlineKeyboardButtonData("Категории", SettingsCallbackName+bot.CallbackSectionSeparator+categoriesButtonId)
+	accountsButton := tgbotapi.NewInlineKeyboardButtonData("Аккаунты", SettingsCallbackName+bot.CallbackSectionSeparator+accountsButtonId)
+	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(categoriesButton, accountsButton))
 	return result
 }

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ability to manage accounts
+
 ## [1.3.1] - 2023-04-30
 
 ### Fixed

@@ -95,6 +95,12 @@ func createApp(version string, commit string) fx.Option {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
+			callback.NewSettingsAccountsCallback,
+			fx.Annotate(
+				func(cb *callback.SettingsAccountsCallback) bot.Callback {
+					return cb
+				}, fx.ResultTags(`group:"callbacks"`),
+			),
 			//forms
 			fx.Annotate(
 				form.NewMessageForm, fx.ResultTags(`group:"forms"`),
