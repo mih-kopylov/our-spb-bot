@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Message delay in case there are other accounts that may be used to sent it
+
 ## [1.3.0] - 2023-04-29
 
 ### Added
