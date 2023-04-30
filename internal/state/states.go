@@ -157,3 +157,15 @@ type Account struct {
 	RateLimitedUntil time.Time    `firestore:"rateLimitedUntil"`
 	State            AccountState `firestore:"state"`
 }
+
+func (a *Account) GetStateName() (string, error) {
+	switch a.State {
+	case AccountStateDisabled:
+		return "Отключён", nil
+	case AccountStateEnabled:
+		return "Включён", nil
+	default:
+		return "", errorx.IllegalState.New("unsupported account state: %v", a.State)
+	}
+
+}
