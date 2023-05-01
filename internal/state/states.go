@@ -2,6 +2,7 @@ package state
 
 import (
 	"github.com/joomcode/errorx"
+	"github.com/samber/lo"
 	"github.com/sirupsen/logrus"
 	"reflect"
 	"time"
@@ -25,6 +26,7 @@ const (
 	FormFieldCurrentCategoryNode FormField = "currentCategoryNode"
 	FormFieldMessageText         FormField = "messageText"
 	FormFieldFiles               FormField = "files"
+	FormFieldMessageIdFile       FormField = "messageIdFile"
 )
 
 type UserState struct {
@@ -140,6 +142,44 @@ func (s *UserState) AddValueToStringSlice(key FormField, value string) {
 
 	currentValue := s.GetStringSlice(key)
 	currentValue = append(currentValue, value)
+	s.Form[string(key)] = currentValue
+}
+
+func (s *UserState) RemoveValueFromStringSlice(key FormField, value string) {
+	if s.Form == nil {
+		s.Form = map[string]any{}
+	}
+
+	currentValue := s.GetStringSlice(key)
+	index := lo.IndexOf(currentValue, value)
+	if index >= 0 {
+		currentValue = append(currentValue[0:index], currentValue[index+1:]...)
+		s.Form[string(key)] = currentValue
+	}
+}
+
+func (s *UserState) GetStringMap(key FormField) map[string]string {
+	if s.Form == nil {
+		return map[string]string{}
+	}
+
+	value, exists := s.Form[string(key)]
+	if !exists {
+		return map[string]string{}
+	}
+
+	mapValue := value.(map[string]any)
+
+	result := map[string]string{}
+	for k, v := range mapValue {
+		result[k] = v.(string)
+	}
+	return result
+}
+
+func (s *UserState) PutValueToMap(key FormField, valueKey string, value string) {
+	currentValue := s.GetStringMap(key)
+	currentValue[valueKey] = value
 	s.Form[string(key)] = currentValue
 }
 

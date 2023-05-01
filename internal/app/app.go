@@ -101,6 +101,12 @@ func createApp(version string, commit string) fx.Option {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
+			callback.NewDeletePhotoCallback,
+			fx.Annotate(
+				func(cb *callback.DeletePhotoCallback) bot.Callback {
+					return cb
+				}, fx.ResultTags(`group:"callbacks"`),
+			),
 			//forms
 			fx.Annotate(
 				form.NewMessageForm, fx.ResultTags(`group:"forms"`),

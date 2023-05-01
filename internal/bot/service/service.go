@@ -44,10 +44,14 @@ func (s *Service) Send(chattable tgbotapi.Chattable) error {
 }
 
 func (s *Service) DeleteMessage(message *tgbotapi.Message) error {
-	deleteMessage := tgbotapi.NewDeleteMessage(message.Chat.ID, message.MessageID)
+	return s.DeleteMessageById(message.Chat.ID, message.MessageID)
+}
+
+func (s *Service) DeleteMessageById(chatId int64, messageId int) error {
+	deleteMessage := tgbotapi.NewDeleteMessage(chatId, messageId)
 	resp, err := s.api.Request(deleteMessage)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to delete message: chat=%v, message=%v", message.Chat.ID, message.MessageID)
+		return errorx.EnhanceStackTrace(err, "failed to delete message: chat=%v, message=%v", chatId, messageId)
 	}
 
 	if !resp.Ok {
