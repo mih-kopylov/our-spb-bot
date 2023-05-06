@@ -5,7 +5,7 @@ go 1.20
 require (
 	cloud.google.com/go/firestore v1.9.0
 	firebase.google.com/go/v4 v4.11.0
-	github.com/caarlos0/env/v7 v7.1.0
+	github.com/caarlos0/env/v7 v7.0.0
 	github.com/docker/go-connections v0.4.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/imroc/req/v3 v3.34.0
