@@ -1,6 +1,8 @@
 name: update-dependencies
 on:
-  push: {}
+  push:
+    branch:
+      - pat
   schedule:
     - cron: '0 5 * * *'
   workflow_dispatch: {}
