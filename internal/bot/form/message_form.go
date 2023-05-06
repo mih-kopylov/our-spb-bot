@@ -153,6 +153,16 @@ func (f *MessageForm) handleLocation(message *tgbotapi.Message, userState *state
 }
 
 func (f *MessageForm) handlePhoto(message *tgbotapi.Message, userState *state.UserState) error {
+	if len(userState.GetStringSlice(state.FormFieldFiles)) == 5 {
+		replyText := `Портал допускает максимум 5 файлов в обращении.
+Это фото не будет приложено. 
+Для того, чтобы использовать именно это фото, можно удалить одно из предыдущих.`
+		_, err := f.service.SendMessageCustom(message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
+			reply.ReplyToMessageID = message.MessageID
+		})
+		return err
+	}
+
 	maxPhotoSize := lo.MaxBy(
 		message.Photo, func(a tgbotapi.PhotoSize, b tgbotapi.PhotoSize) bool {
 			return a.Width*a.Height > b.Width*b.Height
