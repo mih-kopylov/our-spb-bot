@@ -6,4 +6,4 @@ on:
 
 jobs:
   update-dependencies:
-    uses: mih-kopylov/workflows/.github/workflows/update-dependencies.yml@master
+    uses: mih-kopylov/workflows/.github/workflows/update-dependencies.yml@pat
