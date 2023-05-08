@@ -6,6 +6,6 @@ on:
 
 jobs:
   update-dependencies:
-    uses: mih-kopylov/workflows/.github/workflows/update-dependencies.yml@pat
+    uses: mih-kopylov/workflows/.github/workflows/update-dependencies.yml1@pat
     with:
       token: ${{ secrets.UPDATE_DEPENDENCIES_PAT }}
