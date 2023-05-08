@@ -8,4 +8,4 @@ jobs:
   update-dependencies:
     uses: mih-kopylov/workflows/.github/workflows/update-dependencies.yml@pat
     with:
-      token: secrets.UPDATE_DEPENDENCIES_PAT
+      token: ${{ secrets.UPDATE_DEPENDENCIES_PAT }}
