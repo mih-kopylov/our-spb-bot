@@ -8,7 +8,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"strings"
 )
 
@@ -18,13 +18,15 @@ const (
 )
 
 type MessageCategoryCallback struct {
+	logger          *zap.Logger
 	states          state.States
 	service         *service.Service
 	categoryService *category.Service
 }
 
-func NewMessageCategoryCallback(states state.States, service *service.Service, categoryService *category.Service) *MessageCategoryCallback {
+func NewMessageCategoryCallback(logger *zap.Logger, states state.States, service *service.Service, categoryService *category.Service) *MessageCategoryCallback {
 	return &MessageCategoryCallback{
+		logger:          logger,
 		states:          states,
 		service:         service,
 		categoryService: categoryService,
@@ -117,11 +119,13 @@ func (h *MessageCategoryCallback) CreateCategoriesReplyMarkup(userState *state.U
 
 	categoriesTree, err := h.categoryService.ParseCategoriesTree(userState.Categories)
 	if err != nil {
-		logrus.WithError(err).Error("failed to parse user categories")
+		h.logger.Error("failed to parse user categories",
+			zap.Error(err))
 	} else {
 		currentCategoryNode := categoriesTree.FindNodeById(currentCategoryNodeId)
 		if currentCategoryNode == nil {
-			logrus.WithField("id", currentCategoryNodeId).Error("can't find current category node by id")
+			h.logger.Error("can't find current category node by id",
+				zap.String("id", currentCategoryNodeId))
 		} else {
 			buttonsPerRow := 2
 

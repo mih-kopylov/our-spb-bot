@@ -1,11 +1,11 @@
 package app
 
 import (
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/testcontainers/testcontainers-go"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxtest"
+	"go.uber.org/zap"
 	"path/filepath"
 	"reflect"
 	"runtime"
@@ -20,11 +20,14 @@ func TestRunApplication(t *testing.T) {
 }
 
 type ContainerLogConsumer struct {
-	name string
+	name   string
+	logger *zap.Logger
 }
 
 func (c *ContainerLogConsumer) Accept(l testcontainers.Log) {
-	logrus.WithField("container", c.name).WithField("logType", l.LogType).Info(string(l.Content))
+	c.logger.Info(string(l.Content),
+		zap.String("container", c.name),
+		zap.String("logType", l.LogType))
 }
 
 type TestFunc func(t *testing.T, mocks *Mocks)
@@ -49,12 +52,16 @@ func runTestFunc(t *testing.T, mocks *Mocks, testFunc TestFunc) {
 	mocks.BeforeEach(t)
 	defer mocks.AfterEach(t)
 
-	funcForPC := runtime.FuncForPC(reflect.ValueOf(testFunc).Pointer())
-	funcFullName := funcForPC.Name()
-	funcName := strings.TrimPrefix(filepath.Ext(funcFullName), ".")
+	funcName := getFuncName(testFunc)
 	t.Run(funcName, func(t *testing.T) {
 		testFunc(t, mocks)
 	})
+}
+
+func getFuncName(testFunc TestFunc) string {
+	funcForPC := runtime.FuncForPC(reflect.ValueOf(testFunc).Pointer())
+	funcFullName := funcForPC.Name()
+	return strings.TrimPrefix(filepath.Ext(funcFullName), ".")
 }
 
 func ApplicationStarts(t *testing.T, mocks *Mocks) {

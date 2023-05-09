@@ -5,7 +5,7 @@ import (
 	"context"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
@@ -18,11 +18,13 @@ const (
 )
 
 type FirebaseStates struct {
+	logger  *zap.Logger
 	storage *firestore.Client
 }
 
-func NewFirebaseState(storage *firestore.Client) *FirebaseStates {
+func NewFirebaseState(logger *zap.Logger, storage *firestore.Client) *FirebaseStates {
 	return &FirebaseStates{
+		logger:  logger,
 		storage: storage,
 	}
 }
@@ -59,6 +61,7 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 		state.Categories = string(category.DefaultCategoriesText)
 	}
 
+	state.logger = f.logger
 	f.debugUserState(&state, "read user state")
 
 	return &state, nil
@@ -72,21 +75,21 @@ func (f *FirebaseStates) SetState(state *UserState) error {
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state: userId=%v", state.UserId)
 	} else {
-		logrus.WithField("userId", state.UserId).
-			WithField("updateTime", wr.UpdateTime.Format(time.RFC3339Nano)).
-			Debug("user state saved")
+		f.logger.Debug("user state saved",
+			zap.Int64("userId", state.UserId),
+			zap.Time("updateTime", wr.UpdateTime))
 	}
 
 	return nil
 }
 
 func (f *FirebaseStates) debugUserState(state *UserState, message string) {
-	if logrus.IsLevelEnabled(logrus.DebugLevel) {
+	if ce := f.logger.Check(zap.DebugLevel, message); ce != nil {
 		stateYaml, err := yaml.Marshal(state)
 		if err != nil {
-			logrus.WithField("userId", state.UserId).Error("failed to serialize user state")
+			ce.Write(zap.Int64("userId", state.UserId), zap.Error(err))
 		} else {
-			logrus.WithField("state", string(stateYaml)).Debug(message)
+			ce.Write(zap.String("state", string(stateYaml)))
 		}
 	}
 }

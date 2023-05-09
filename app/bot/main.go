@@ -2,7 +2,8 @@ package main
 
 import (
 	"github.com/mih-kopylov/our-spb-bot/internal/app"
-	"github.com/sirupsen/logrus"
+	"github.com/mih-kopylov/our-spb-bot/internal/log"
+	"go.uber.org/zap"
 )
 
 var (
@@ -13,6 +14,6 @@ var (
 func main() {
 	err := app.RunApplication(version, commit)
 	if err != nil {
-		logrus.Fatal(err)
+		log.NewLogger().With(zap.Error(err)).Fatal("")
 	}
 }

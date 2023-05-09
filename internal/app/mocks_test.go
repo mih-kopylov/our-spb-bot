@@ -5,9 +5,11 @@ import (
 	"encoding/base64"
 	"fmt"
 	"github.com/docker/go-connections/nat"
+	"github.com/mih-kopylov/our-spb-bot/internal/log"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/walkerus/go-wiremock"
+	"go.uber.org/zap"
 	"testing"
 	"time"
 )
@@ -22,6 +24,7 @@ type Mocks struct {
 
 func NewMocks(t *testing.T) (*Mocks, error) {
 	ctx := context.Background()
+	testcontainers.Logger = &TestContainersLogger{logger: log.NewLogger()}
 	wiremockContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: testcontainers.ContainerRequest{
 			Image:        "wiremock/wiremock:latest-alpine",
@@ -34,7 +37,7 @@ func NewMocks(t *testing.T) (*Mocks, error) {
 		t.Errorf("failed to start wiremock container: %v", err.Error())
 	}
 
-	wiremockContainer.FollowOutput(&ContainerLogConsumer{name: "wiremock"})
+	wiremockContainer.FollowOutput(&ContainerLogConsumer{name: "wiremock", logger: log.NewLogger()})
 	err = wiremockContainer.StartLogProducer(ctx)
 	if err != nil {
 		defer teardown(t, wiremockContainer)
@@ -64,7 +67,7 @@ func NewMocks(t *testing.T) (*Mocks, error) {
 		return nil, err
 	}
 
-	firestoreContainer.FollowOutput(&ContainerLogConsumer{name: "firestore"})
+	firestoreContainer.FollowOutput(&ContainerLogConsumer{name: "firestore", logger: log.NewLogger()})
 	err = firestoreContainer.StartLogProducer(ctx)
 	if err != nil {
 		defer teardown(t, wiremockContainer, firestoreContainer)
@@ -165,4 +168,12 @@ func (m *Mocks) SetupGetUpdatesMock(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
+}
+
+type TestContainersLogger struct {
+	logger *zap.Logger
+}
+
+func (t *TestContainersLogger) Printf(format string, v ...interface{}) {
+	t.logger.Sugar().Infof(format, v...)
 }

@@ -5,19 +5,20 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"net/http"
 	"strings"
 	"time"
 )
 
 type ReqClient struct {
+	logger   *zap.Logger
 	client   *req.Client
 	clientId string
 	secret   string
 }
 
-func NewReqClient(conf *config.Config) *ReqClient {
+func NewReqClient(logger *zap.Logger, conf *config.Config) *ReqClient {
 	client := req.C().
 		SetBaseURL("https://gorod.gov.spb.ru").
 		// this is to pretend to be an official client
@@ -27,6 +28,7 @@ func NewReqClient(conf *config.Config) *ReqClient {
 	client.GetTransport()
 
 	return &ReqClient{
+		logger:   logger,
 		client:   client,
 		clientId: conf.OurSpbClientId,
 		secret:   conf.OurSpbSecret,
@@ -187,12 +189,13 @@ func (r *ReqClient) configureRetries(request *req.Request) {
 	})
 	request.SetRetryFixedInterval(5 * time.Second)
 	request.AddRetryHook(func(resp *req.Response, err error) {
-		logrus.WithField("url", resp.Request.RawURL).Info("retry request")
+		r.logger.Info("retry request",
+			zap.String("url", resp.Request.RawURL))
 	})
 }
 
 func (r *ReqClient) printDebugDump(response *req.Response) {
-	if logrus.IsLevelEnabled(logrus.DebugLevel) {
+	if ce := r.logger.Check(zap.DebugLevel, "response"); ce != nil {
 		println(response.Dump())
 	}
 }

@@ -4,7 +4,7 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"github.com/joomcode/errorx"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
@@ -16,12 +16,14 @@ const (
 )
 
 type FirebaseQueue struct {
-	fc *firestore.Client
+	logger *zap.Logger
+	fc     *firestore.Client
 }
 
-func NewFirebaseQueue(storage *firestore.Client) *FirebaseQueue {
+func NewFirebaseQueue(logger *zap.Logger, storage *firestore.Client) *FirebaseQueue {
 	return &FirebaseQueue{
-		fc: storage,
+		logger: logger,
+		fc:     storage,
 	}
 }
 
@@ -68,7 +70,7 @@ func (q *FirebaseQueue) Poll() (*Message, error) {
 		return &result, nil
 	}
 
-	logrus.Debug("no appropriate messages found")
+	q.logger.Debug("no appropriate messages found")
 	return nil, nil
 }
 
@@ -171,12 +173,12 @@ func (q *FirebaseQueue) DeleteMessage(message *Message) error {
 }
 
 func (q *FirebaseQueue) debugMessage(message *Message, text string) {
-	if logrus.IsLevelEnabled(logrus.DebugLevel) {
+	if ce := q.logger.Check(zap.DebugLevel, text); ce != nil {
 		messageYaml, err := yaml.Marshal(message)
 		if err != nil {
-			logrus.WithField("userId", message.UserId).Error("failed to serialize message")
+			ce.Write(zap.Int64("userId", message.UserId), zap.Error(err))
 		} else {
-			logrus.WithField("message", string(messageYaml)).Debug(text)
+			ce.Write(zap.String("message", string(messageYaml)))
 		}
 	}
 }

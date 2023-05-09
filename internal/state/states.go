@@ -3,7 +3,7 @@ package state
 import (
 	"github.com/joomcode/errorx"
 	"github.com/samber/lo"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"reflect"
 	"time"
 )
@@ -30,6 +30,7 @@ const (
 )
 
 type UserState struct {
+	logger             *zap.Logger
 	UserId             int64          `firestore:"userId"`
 	FullName           string         `firestore:"fullName"`
 	Accounts           []Account      `firestore:"accounts"`
@@ -102,9 +103,9 @@ func (s *UserState) GetStringSlice(key FormField) []string {
 	if typeOfValue.Kind() == reflect.Slice && typeOfValue.Elem().Kind() == reflect.String {
 		valueStringSlice, ok := value.([]string)
 		if !ok {
-			logrus.WithField("userId", s.UserId).
-				WithField("key", key).
-				Warn("failed to convert value to string array")
+			s.logger.Warn("failed to convert value to string array",
+				zap.Int64("userId", s.UserId),
+				zap.Any("key", key))
 			return nil
 		}
 
@@ -113,9 +114,9 @@ func (s *UserState) GetStringSlice(key FormField) []string {
 
 	valueArray, ok := value.([]any)
 	if !ok {
-		logrus.WithField("userId", s.UserId).
-			WithField("key", key).
-			Warn("failed to convert value to array")
+		s.logger.Warn("failed to convert value to array",
+			zap.Int64("userId", s.UserId),
+			zap.Any("key", key))
 		return nil
 	}
 
@@ -123,10 +124,10 @@ func (s *UserState) GetStringSlice(key FormField) []string {
 	for _, item := range valueArray {
 		itemString, ok := item.(string)
 		if !ok {
-			logrus.WithField("userId", s.UserId).
-				WithField("key", key).
-				WithField("item", item).
-				Warn("failed to convert array value item to string")
+			s.logger.Warn("failed to convert array value item to string",
+				zap.Int64("userId", s.UserId),
+				zap.Any("item", item),
+				zap.Any("key", key))
 		} else {
 			sliceStrings = append(sliceStrings, itemString)
 		}
