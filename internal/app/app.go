@@ -10,16 +10,17 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
+	"github.com/mih-kopylov/our-spb-bot/internal/log"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/mih-kopylov/our-spb-bot/internal/storage"
-	"github.com/sirupsen/logrus"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
+	"go.uber.org/zap"
 )
 
 func RunApplication(version string, commit string) error {
-	logrus.SetLevel(logrus.DebugLevel)
 	fx.New(createApp(version, commit)).Run()
 
 	return nil
@@ -27,8 +28,14 @@ func RunApplication(version string, commit string) error {
 
 func createApp(version string, commit string) fx.Option {
 	return fx.Options(
+		fx.WithLogger(func(logger *zap.Logger) fxevent.Logger {
+			result := fxevent.ZapLogger{Logger: logger}
+			result.UseLogLevel(zap.DebugLevel)
+			return &result
+		}),
 		fx.Supply(info.NewInfo(version, commit)),
 		fx.Provide(
+			log.NewLogger,
 			config.NewConfig,
 			api.NewApi,
 			storage.NewFirebaseStorage,
@@ -42,7 +49,7 @@ func createApp(version string, commit string) fx.Option {
 
 			service.NewService,
 			fx.Annotate(
-				bot.NewTgBot, fx.ParamTags(``, ``, `group:"commands"`, `group:"callbacks"`, `group:"forms"`),
+				bot.NewTgBot, fx.ParamTags(``, ``, ``, `group:"commands"`, `group:"callbacks"`, `group:"forms"`),
 			),
 			queue.NewMessageSender,
 			fx.Annotate(

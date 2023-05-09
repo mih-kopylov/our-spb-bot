@@ -12,11 +12,11 @@ require (
 	github.com/joomcode/errorx v1.1.0
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/samber/lo v1.38.1
-	github.com/sirupsen/logrus v1.9.0
 	github.com/stretchr/testify v1.8.2
 	github.com/testcontainers/testcontainers-go v0.20.0
 	github.com/walkerus/go-wiremock v1.5.0
 	go.uber.org/fx v1.19.3
+	go.uber.org/zap v1.24.0
 	golang.org/x/exp v0.0.0-20230425010034-47ecfdc1ba53
 	google.golang.org/api v0.121.0
 	google.golang.org/grpc v1.55.0
@@ -72,11 +72,11 @@ require (
 	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
 	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
 	github.com/quic-go/quic-go v0.34.0 // indirect
+	github.com/sirupsen/logrus v1.9.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/dig v1.17.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.24.0 // indirect
 	golang.org/x/crypto v0.8.0 // indirect
 	golang.org/x/mod v0.10.0 // indirect
 	golang.org/x/net v0.10.0 // indirect

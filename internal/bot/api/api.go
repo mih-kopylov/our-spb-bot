@@ -4,11 +4,11 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
-func NewApi(conf *config.Config) (*tgbotapi.BotAPI, error) {
-	err := tgbotapi.SetLogger(&LorRusLogger{})
+func NewApi(logger *zap.Logger, conf *config.Config) (*tgbotapi.BotAPI, error) {
+	err := tgbotapi.SetLogger(&TgLogger{logger: logger})
 	if err != nil {
 		return nil, errorx.EnhanceStackTrace(err, "failed to configure bot api logging")
 	}
@@ -22,12 +22,14 @@ func NewApi(conf *config.Config) (*tgbotapi.BotAPI, error) {
 	return api, nil
 }
 
-type LorRusLogger struct{}
-
-func (l *LorRusLogger) Println(v ...interface{}) {
-	logrus.Infoln(v...)
+type TgLogger struct {
+	logger *zap.Logger
 }
 
-func (l *LorRusLogger) Printf(format string, v ...interface{}) {
-	logrus.Infof(format, v...)
+func (l *TgLogger) Println(v ...interface{}) {
+	l.logger.Sugar().Info(v...)
+}
+
+func (l *TgLogger) Printf(format string, v ...interface{}) {
+	l.logger.Sugar().Infof(format, v...)
 }

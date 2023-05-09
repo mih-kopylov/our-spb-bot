@@ -5,7 +5,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"strings"
 )
@@ -16,6 +16,7 @@ var (
 )
 
 type TgBot struct {
+	logger    *zap.Logger
 	api       *tgbotapi.BotAPI
 	states    state.States
 	commands  map[string]Command
@@ -23,8 +24,9 @@ type TgBot struct {
 	forms     map[string]Form
 }
 
-func NewTgBot(api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback, forms []Form) *TgBot {
+func NewTgBot(logger *zap.Logger, api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback, forms []Form) *TgBot {
 	return &TgBot{
+		logger: logger,
 		api:    api,
 		states: states,
 		commands: lo.SliceToMap(commands, func(item Command) (string, Command) {
@@ -61,7 +63,9 @@ func (b *TgBot) processUpdates() {
 		err := b.callHandler(update)
 		if err != nil {
 			err = errorx.EnhanceStackTrace(err, "failed to handle update")
-			logrus.WithField("chat", update.FromChat().ID).Error(err)
+			b.logger.Error("",
+				zap.Int64("chat", update.FromChat().ID),
+				zap.Error(err))
 		}
 	}
 }

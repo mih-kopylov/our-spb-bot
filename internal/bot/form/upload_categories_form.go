@@ -7,7 +7,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
 const (
@@ -15,13 +15,15 @@ const (
 )
 
 type UploadCategoriesForm struct {
+	logger          *zap.Logger
 	states          state.States
 	service         *service.Service
 	categoryService *category.Service
 }
 
-func NewUploadCategoriesForm(states state.States, service *service.Service, categoryService *category.Service) bot.Form {
+func NewUploadCategoriesForm(logger *zap.Logger, states state.States, service *service.Service, categoryService *category.Service) bot.Form {
 	return &UploadCategoriesForm{
+		logger:          logger,
 		states:          states,
 		service:         service,
 		categoryService: categoryService,
@@ -52,7 +54,7 @@ func (f *UploadCategoriesForm) Handle(message *tgbotapi.Message) error {
 
 	_, err = f.categoryService.ParseCategoriesTree(string(fileContent))
 	if err != nil {
-		logrus.Error("can't parse document")
+		f.logger.Error("can't parse document")
 		_, err = f.service.SendMessageCustom(message.Chat, "Документ должен быть в yaml формате", func(reply *tgbotapi.MessageConfig) {
 			reply.ReplyToMessageID = message.MessageID
 		})
