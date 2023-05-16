@@ -80,8 +80,8 @@ func (s *MessageSender) sendNextMessage() {
 		return
 	}
 
-	s.logger.Debug("message found",
-		zap.String("id", message.Id))
+	s.logger.Debug("message found", zap.String("id", message.Id))
+
 	userState, err := s.states.GetState(message.UserId)
 	if err != nil {
 		s.logger.Error("failed to get user state",
@@ -101,7 +101,11 @@ func (s *MessageSender) sendNextMessage() {
 		if errorx.IsOfType(err, ErrAllAccountsRateLimited) {
 			s.logger.Info("user is rate limited",
 				zap.String("id", message.Id))
-			message.RetryAfter = lo.MinBy(userState.Accounts, func(a state.Account, b state.Account) bool {
+
+			enabledAccounts := lo.Filter(userState.Accounts, func(item state.Account, _ int) bool {
+				return item.State == state.AccountStateEnabled
+			})
+			message.RetryAfter = lo.MinBy(enabledAccounts, func(a state.Account, b state.Account) bool {
 				return a.RateLimitedUntil.Before(b.RateLimitedUntil)
 			}).RateLimitedUntil
 			s.returnMessage(message, StatusCreated, "user is rate limited")
