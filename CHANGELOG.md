@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Retry after calculation for a message when some accounts are disabled
+
 ### Changed
 
 - Switch logging package to `zap`
