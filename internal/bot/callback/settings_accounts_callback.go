@@ -7,6 +7,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"github.com/mih-kopylov/our-spb-bot/internal/util"
 	"github.com/samber/lo"
 	"strings"
 )
@@ -16,6 +17,7 @@ const (
 	actionsAccountButtonId       = "actions"
 	disableAccountButtonId       = "disable"
 	enableAccountButtonId        = "enable"
+	configureTimeAccountButtonId = "time"
 	deleteAccountButtonId        = "delete"
 	listAccountsButtonId         = "list"
 )
@@ -60,6 +62,9 @@ func (h *SettingsAccountsCallback) Handle(callbackQuery *tgbotapi.CallbackQuery,
 
 	case enableAccountButtonId:
 		return h.setAccountStateButton(callbackQuery, value, userState, state.AccountStateEnabled)
+
+	case configureTimeAccountButtonId:
+		return h.configureAccountTimeButton(callbackQuery, value, userState)
 
 	case deleteAccountButtonId:
 		return h.handleDeleteAccountButton(callbackQuery, value, userState)
@@ -106,6 +111,29 @@ func (h *SettingsAccountsCallback) setAccountStateButton(callbackQuery *tgbotapi
 	return h.Handle(callbackQuery, actionsAccountButtonId+bot.CallbackSectionSeparator+accountLogin)
 }
 
+func (h *SettingsAccountsCallback) configureAccountTimeButton(callbackQuery *tgbotapi.CallbackQuery, value string, userState *state.UserState) error {
+	accountLogin := value
+	_, found := lo.Find(userState.Accounts, func(item state.Account) bool {
+		return item.Login == accountLogin
+	})
+	if !found {
+		replyText := fmt.Sprintf(`Не удалось найти аккаунт по логину %v`, accountLogin)
+		return h.service.SendMessage(callbackQuery.Message.Chat, replyText)
+	}
+
+	userState.MessageHandlerName = "AccountTimeForm"
+	userState.SetFormField(state.FormFieldLogin, accountLogin)
+	err := h.states.SetState(userState)
+	if err != nil {
+		return err
+	}
+
+	replyText := `Напишите время, до которого будет заблокирован аккаунт в случае превышения количества обращений в сутки.
+
+Формат времени: ЧЧ:ММ`
+	return h.service.SendMessage(callbackQuery.Message.Chat, replyText)
+}
+
 func (h *SettingsAccountsCallback) handleActionsAccountButton(callbackQuery *tgbotapi.CallbackQuery, value string, userState *state.UserState) error {
 	accountLogin := value
 	account, found := lo.Find(userState.Accounts, func(item state.Account) bool {
@@ -120,11 +148,15 @@ func (h *SettingsAccountsCallback) handleActionsAccountButton(callbackQuery *tgb
 		return err
 	}
 
+	accountTime := account.RateLimitNextDayTime.In(util.SpbLocation).Format("15:04 MST")
+
 	replyText := fmt.Sprintf(`Аккаунт %v
 Состояние: %v
+Время отправки обращений: %v
 Выберите действие`,
 		accountLogin,
 		accountStateName,
+		accountTime,
 	)
 
 	reply := tgbotapi.NewEditMessageTextAndMarkup(callbackQuery.Message.Chat.ID, callbackQuery.Message.MessageID,
@@ -181,6 +213,7 @@ func (h *SettingsAccountsCallback) createActionMarkup(account state.Account) tgb
 	result := tgbotapi.NewInlineKeyboardMarkup()
 	disableButton := tgbotapi.NewInlineKeyboardButtonData("Выключить", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+disableAccountButtonId+bot.CallbackSectionSeparator+account.Login)
 	enableButton := tgbotapi.NewInlineKeyboardButtonData("Включить", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+enableAccountButtonId+bot.CallbackSectionSeparator+account.Login)
+	configureTimeButton := tgbotapi.NewInlineKeyboardButtonData("Настроить время", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+configureTimeAccountButtonId+bot.CallbackSectionSeparator+account.Login)
 	deleteButton := tgbotapi.NewInlineKeyboardButtonData("Удалить", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+deleteAccountButtonId+bot.CallbackSectionSeparator+account.Login)
 	listButton := tgbotapi.NewInlineKeyboardButtonData("⬆ К списку", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+listAccountsButtonId)
 	row := tgbotapi.NewInlineKeyboardRow()
@@ -192,6 +225,7 @@ func (h *SettingsAccountsCallback) createActionMarkup(account state.Account) tgb
 	}
 	row = append(row, deleteButton)
 	result.InlineKeyboard = append(result.InlineKeyboard, row)
+	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(configureTimeButton))
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(listButton))
 	return result
 }

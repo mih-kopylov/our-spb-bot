@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Ability to configure messages send time after an account was rate limited
+- Ability to run state migrations
+
 ## [1.7.0] - 2023-05-16
 
 ### Fixed
