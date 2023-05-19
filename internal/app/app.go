@@ -11,6 +11,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/log"
+	"github.com/mih-kopylov/our-spb-bot/internal/migration"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
@@ -130,10 +131,26 @@ func createApp(version string, commit string) fx.Option {
 			fx.Annotate(
 				form.NewUploadCategoriesForm, fx.ResultTags(`group:"forms"`),
 			),
+			fx.Annotate(
+				form.NewAccountTimeForm, fx.ResultTags(`group:"forms"`),
+			),
+			//migrations
+			fx.Annotate(
+				migration.NewMigrations, fx.ParamTags(``, `group:"migrations"`),
+			),
+			fx.Annotate(
+				migration.NewAccountTimeMigration, fx.ResultTags(`group:"migrations"`),
+			),
 		),
+		
+		fx.Invoke(func(migrations *migration.Migrations) error {
+			return migrations.RunAll()
+		}),
+
 		fx.Invoke(func(bot *bot.TgBot) error {
 			return bot.Start()
 		}),
+
 		fx.Invoke(func(sender *queue.MessageSender) error {
 			return sender.Start()
 		}),

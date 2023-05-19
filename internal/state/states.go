@@ -9,9 +9,12 @@ import (
 )
 
 type States interface {
-	// GetState Puts a new user into the context. If the user already exists in the context, it's kept,
+	// GetState Reads a user from the storage
 	GetState(userId int64) (*UserState, error)
+	// SetState Puts a new user into the storage. If the user already exists in the context, it's kept,
 	SetState(state *UserState) error
+	// GetAllStates Reads all users from the storage
+	GetAllStates() ([]*UserState, error)
 }
 
 var (
@@ -192,11 +195,12 @@ const (
 )
 
 type Account struct {
-	Login            string       `firestore:"login"`
-	Password         string       `firestore:"password"`
-	Token            string       `firestore:"token"`
-	RateLimitedUntil time.Time    `firestore:"rateLimitedUntil"`
-	State            AccountState `firestore:"state"`
+	Login                string       `firestore:"login"`
+	Password             string       `firestore:"password"`
+	Token                string       `firestore:"token"`
+	RateLimitedUntil     time.Time    `firestore:"rateLimitedUntil"`
+	RateLimitNextDayTime time.Time    `firestore:"rateLimitNextDayTime"`
+	State                AccountState `firestore:"state"`
 }
 
 func (a *Account) GetStateName() (string, error) {

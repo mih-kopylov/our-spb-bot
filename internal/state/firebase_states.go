@@ -83,6 +83,25 @@ func (f *FirebaseStates) SetState(state *UserState) error {
 	return nil
 }
 
+func (f *FirebaseStates) GetAllStates() ([]*UserState, error) {
+	snapshots, err := f.storage.Collection(collection).Documents(context.Background()).GetAll()
+	if err != nil {
+		return nil, errorx.EnhanceStackTrace(err, "failed to get all user states")
+	}
+
+	var states []*UserState
+	for _, snapshot := range snapshots {
+		var state UserState
+		err = snapshot.DataTo(&state)
+		if err != nil {
+			return nil, errorx.EnhanceStackTrace(err, "failed to deserialize user state data: userId=%v", snapshot.Ref.ID)
+		}
+		states = append(states, &state)
+	}
+
+	return states, nil
+}
+
 func (f *FirebaseStates) debugUserState(state *UserState, message string) {
 	if ce := f.logger.Check(zap.DebugLevel, message); ce != nil {
 		stateYaml, err := yaml.Marshal(state)

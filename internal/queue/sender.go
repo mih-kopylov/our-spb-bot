@@ -8,6 +8,7 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"github.com/mih-kopylov/our-spb-bot/internal/util"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"math"
@@ -24,10 +25,6 @@ type MessageSender struct {
 	enabled       bool
 	sleepDuration time.Duration
 }
-
-var (
-	spbLocation = time.FixedZone("UTC+3", 3*60*60)
-)
 
 var (
 	Errors                    = errorx.NewNamespace("Sender")
@@ -189,8 +186,9 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 	} else if errorx.IsOfType(err, spb.ErrBadRequest) {
 		s.returnMessageIncreaseTries(message, StatusFailed, err.Error())
 	} else if errorx.IsOfType(err, spb.ErrTooManyRequests) {
-		year, month, day := time.Now().In(spbLocation).AddDate(0, 0, 1).Date()
-		nextTryTime := time.Date(year, month, day, 1, 0, 0, 0, spbLocation)
+		year, month, day := time.Now().In(util.SpbLocation).AddDate(0, 0, 1).Date()
+		hour, min, _ := account.RateLimitNextDayTime.Clock()
+		nextTryTime := time.Date(year, month, day, hour, min, 0, 0, util.SpbLocation)
 
 		account.RateLimitedUntil = nextTryTime
 		err = s.states.SetState(userState)
