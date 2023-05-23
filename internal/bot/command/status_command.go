@@ -66,7 +66,9 @@ func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
 	} else {
 		accounts = strings.Join(lo.Map(userState.Accounts, func(item state.Account, index int) string {
 			result := "  " + item.Login
-			if item.RateLimitedUntil.After(time.Now()) {
+			if item.State == state.AccountStateDisabled {
+				result += " - отключён"
+			} else if item.RateLimitedUntil.After(time.Now()) {
 				result += " - заблокирован до " + item.RateLimitedUntil.Format(time.RFC3339)
 			} else {
 				result += " - готов к отправке обращений"
