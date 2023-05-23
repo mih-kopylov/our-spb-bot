@@ -3,7 +3,7 @@ module github.com/mih-kopylov/our-spb-bot
 go 1.20
 
 require (
-	cloud.google.com/go/firestore v1.9.0
+	cloud.google.com/go/firestore v1.10.0
 	firebase.google.com/go/v4 v4.11.0
 	github.com/caarlos0/env/v7 v7.1.0
 	github.com/docker/go-connections v0.4.0
@@ -17,7 +17,7 @@ require (
 	github.com/walkerus/go-wiremock v1.5.0
 	go.uber.org/fx v1.19.3
 	go.uber.org/zap v1.24.0
-	golang.org/x/exp v0.0.0-20230519143937-03e91628a987
+	golang.org/x/exp v0.0.0-20230522175609-2e198f4a06a1
 	google.golang.org/api v0.123.0
 	google.golang.org/grpc v1.55.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -51,7 +51,7 @@ require (
 	github.com/google/s2a-go v0.1.4 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.2.3 // indirect
-	github.com/googleapis/gax-go/v2 v2.8.0 // indirect
+	github.com/googleapis/gax-go/v2 v2.9.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-multierror v1.1.1 // indirect
 	github.com/imdario/mergo v0.3.15 // indirect
