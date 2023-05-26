@@ -89,7 +89,9 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/appengine/v2 v2.0.3 // indirect
-	google.golang.org/genproto v0.0.0-20230524185152-1884fd1fac28 // indirect
+	google.golang.org/genproto v0.0.0-20230526015343-6ee61e4f9d5f // indirect
+	google.golang.org/genproto/googleapis/api v0.0.0-20230526015343-6ee61e4f9d5f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20230526015343-6ee61e4f9d5f // indirect
 	google.golang.org/protobuf v1.30.0 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 )
