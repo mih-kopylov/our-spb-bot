@@ -98,3 +98,8 @@ require (
 	google.golang.org/protobuf v1.31.0 // indirect
 	gotest.tools/v3 v3.4.0 // indirect
 )
+
+exclude (
+	// v0.3.0 breaks backward compatibility, see https://github.com/quic-go/quic-go/issues/3907
+	github.com/quic-go/qtls-go1-20 v0.3.0
+)
