@@ -73,7 +73,7 @@ require (
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-19 v0.3.2 // indirect
 	github.com/quic-go/qtls-go1-20 v0.2.2 // indirect
-	github.com/quic-go/quic-go v0.36.0 // indirect
+	github.com/quic-go/quic-go v0.36.1 // indirect
 	github.com/refraction-networking/utls v1.3.2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	go.opencensus.io v0.24.0 // indirect
@@ -99,7 +99,5 @@ require (
 	gotest.tools/v3 v3.4.0 // indirect
 )
 
-exclude (
-	// v0.3.0 breaks backward compatibility, see https://github.com/quic-go/quic-go/issues/3907
-	github.com/quic-go/qtls-go1-20 v0.3.0
-)
+// v0.3.0 breaks backward compatibility, see https://github.com/quic-go/quic-go/issues/3907
+exclude github.com/quic-go/qtls-go1-20 v0.3.0
