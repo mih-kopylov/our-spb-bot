@@ -187,7 +187,7 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 		s.returnMessageIncreaseTries(message, StatusFailed, err.Error())
 	} else if errorx.IsOfType(err, spb.ErrTooManyRequests) {
 		year, month, day := time.Now().In(util.SpbLocation).AddDate(0, 0, 1).Date()
-		hour, min, _ := account.RateLimitNextDayTime.Clock()
+		hour, min, _ := account.RateLimitNextDayTime.In(util.SpbLocation).Clock()
 		nextTryTime := time.Date(year, month, day, hour, min, 0, 0, util.SpbLocation)
 
 		account.RateLimitedUntil = nextTryTime
