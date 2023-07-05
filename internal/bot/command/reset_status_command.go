@@ -5,9 +5,8 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"time"
 )
 
@@ -16,11 +15,11 @@ const (
 )
 
 type ResetStatusCommand struct {
-	service      *service.Service
+	service      *tgbot.Service
 	messageQueue queue.MessageQueue
 }
 
-func NewResetStatusCommand(service *service.Service, messageQueue queue.MessageQueue) bot.Command {
+func NewResetStatusCommand(service *tgbot.Service, messageQueue queue.MessageQueue) tgbot.Command {
 	return &ResetStatusCommand{
 		service:      service,
 		messageQueue: messageQueue,

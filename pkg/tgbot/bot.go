@@ -1,4 +1,4 @@
-package bot
+package tgbot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -10,7 +10,7 @@ import (
 	"strings"
 )
 
-type TgBot struct {
+type Bot struct {
 	logger    *zap.Logger
 	api       *tgbotapi.BotAPI
 	states    state.States
@@ -19,8 +19,8 @@ type TgBot struct {
 	forms     map[string]Form
 }
 
-func NewTgBot(logger *zap.Logger, api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback, forms []Form) *TgBot {
-	return &TgBot{
+func NewBot(logger *zap.Logger, api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback, forms []Form) *Bot {
+	return &Bot{
 		logger: logger,
 		api:    api,
 		states: states,
@@ -36,7 +36,7 @@ func NewTgBot(logger *zap.Logger, api *tgbotapi.BotAPI, states state.States, com
 	}
 }
 
-func (b *TgBot) Start() error {
+func (b *Bot) Start() error {
 	err := b.registerCommands()
 	if err != nil {
 		return err
@@ -49,7 +49,7 @@ func (b *TgBot) Start() error {
 	return nil
 }
 
-func (b *TgBot) processUpdates() {
+func (b *Bot) processUpdates() {
 	updateConfig := tgbotapi.NewUpdate(0)
 	updateConfig.Timeout = 30
 
@@ -66,7 +66,7 @@ func (b *TgBot) processUpdates() {
 	}
 }
 
-func (b *TgBot) callHandler(update tgbotapi.Update) error {
+func (b *Bot) callHandler(update tgbotapi.Update) error {
 	switch {
 	case update.Message != nil:
 		return b.handleMessage(update.Message)
@@ -77,7 +77,7 @@ func (b *TgBot) callHandler(update tgbotapi.Update) error {
 	}
 }
 
-func (b *TgBot) registerCommands() error {
+func (b *Bot) registerCommands() error {
 	setMyCommandsConfig := tgbotapi.NewSetMyCommands(
 		lo.Map(
 			maps.Values(b.commands), func(command Command, _ int) tgbotapi.BotCommand {
@@ -96,7 +96,7 @@ func (b *TgBot) registerCommands() error {
 	return nil
 }
 
-func (b *TgBot) handleCallback(callbackQuery *tgbotapi.CallbackQuery) error {
+func (b *Bot) handleCallback(callbackQuery *tgbotapi.CallbackQuery) error {
 	data := callbackQuery.Data
 	callbackName, value, found := strings.Cut(data, CallbackSectionSeparator)
 	if !found {
@@ -116,7 +116,7 @@ func (b *TgBot) handleCallback(callbackQuery *tgbotapi.CallbackQuery) error {
 	return nil
 }
 
-func (b *TgBot) handleMessage(message *tgbotapi.Message) error {
+func (b *Bot) handleMessage(message *tgbotapi.Message) error {
 	commandName := message.Command()
 
 	if commandName != "" {

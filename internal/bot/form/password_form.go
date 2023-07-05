@@ -3,11 +3,10 @@ package form
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"time"
 )
 
@@ -17,7 +16,7 @@ const (
 
 type PasswordForm struct {
 	states    state.States
-	service   *service.Service
+	service   *tgbot.Service
 	spbClient spb.Client
 	queue     queue.MessageQueue
 }
@@ -26,7 +25,7 @@ func (f *PasswordForm) Name() string {
 	return PasswordFormName
 }
 
-func NewPasswordForm(states state.States, service *service.Service, spbClient spb.Client, queue queue.MessageQueue) bot.Form {
+func NewPasswordForm(states state.States, service *tgbot.Service, spbClient spb.Client, queue queue.MessageQueue) tgbot.Form {
 	return &PasswordForm{
 		states:    states,
 		service:   service,

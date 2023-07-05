@@ -6,11 +6,10 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/lithammer/shortuuid/v4"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"github.com/samber/lo"
 	"strconv"
 	"strings"
@@ -23,7 +22,7 @@ const (
 
 type MessageForm struct {
 	states                state.States
-	service               *service.Service
+	service               *tgbot.Service
 	messageQueue          queue.MessageQueue
 	categoryService       *category.Service
 	deleteMessageCallback *callback.DeleteMessageCallback
@@ -34,9 +33,9 @@ func (f *MessageForm) Name() string {
 	return MessageFormName
 }
 
-func NewMessageForm(states state.States, service *service.Service,
+func NewMessageForm(states state.States, service *tgbot.Service,
 	messageQueue queue.MessageQueue, categoryService *category.Service,
-	deleteMessageCallback *callback.DeleteMessageCallback, deletePhotoCallback *callback.DeletePhotoCallback) bot.Form {
+	deleteMessageCallback *callback.DeleteMessageCallback, deletePhotoCallback *callback.DeletePhotoCallback) tgbot.Form {
 	return &MessageForm{
 		states:                states,
 		service:               service,

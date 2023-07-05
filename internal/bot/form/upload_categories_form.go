@@ -3,10 +3,9 @@ package form
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"go.uber.org/zap"
 )
 
@@ -17,11 +16,11 @@ const (
 type UploadCategoriesForm struct {
 	logger          *zap.Logger
 	states          state.States
-	service         *service.Service
+	service         *tgbot.Service
 	categoryService *category.Service
 }
 
-func NewUploadCategoriesForm(logger *zap.Logger, states state.States, service *service.Service, categoryService *category.Service) bot.Form {
+func NewUploadCategoriesForm(logger *zap.Logger, states state.States, service *tgbot.Service, categoryService *category.Service) tgbot.Form {
 	return &UploadCategoriesForm{
 		logger:          logger,
 		states:          states,

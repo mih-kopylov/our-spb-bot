@@ -3,8 +3,7 @@ package command
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 )
 
 const (
@@ -12,11 +11,11 @@ const (
 )
 
 type SettingsCommand struct {
-	service          *service.Service
+	service          *tgbot.Service
 	settingsCallback *callback.SettingsCallback
 }
 
-func NewSettingsCommand(service *service.Service, settingsCallback *callback.SettingsCallback) bot.Command {
+func NewSettingsCommand(service *tgbot.Service, settingsCallback *callback.SettingsCallback) tgbot.Command {
 	return &SettingsCommand{
 		service:          service,
 		settingsCallback: settingsCallback,

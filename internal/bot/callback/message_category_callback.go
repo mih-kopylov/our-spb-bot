@@ -4,10 +4,9 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"go.uber.org/zap"
 	"strings"
 )
@@ -20,11 +19,11 @@ const (
 type MessageCategoryCallback struct {
 	logger          *zap.Logger
 	states          state.States
-	service         *service.Service
+	service         *tgbot.Service
 	categoryService *category.Service
 }
 
-func NewMessageCategoryCallback(logger *zap.Logger, states state.States, service *service.Service, categoryService *category.Service) *MessageCategoryCallback {
+func NewMessageCategoryCallback(logger *zap.Logger, states state.States, service *tgbot.Service, categoryService *category.Service) *MessageCategoryCallback {
 	return &MessageCategoryCallback{
 		logger:          logger,
 		states:          states,
@@ -113,7 +112,7 @@ func (h *MessageCategoryCallback) CreateCategoriesReplyMarkup(userState *state.U
 
 	currentCategoryNodeId := userState.GetStringFormField(state.FormFieldCurrentCategoryNode)
 	if currentCategoryNodeId != "" {
-		backButton := tgbotapi.NewInlineKeyboardButtonData("⬆ Вверх", MessageCategoryCallbackName+bot.CallbackSectionSeparator+DataBack)
+		backButton := tgbotapi.NewInlineKeyboardButtonData("⬆ Вверх", MessageCategoryCallbackName+tgbot.CallbackSectionSeparator+DataBack)
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(backButton))
 	}
 
@@ -134,7 +133,7 @@ func (h *MessageCategoryCallback) CreateCategoriesReplyMarkup(userState *state.U
 				for j := 0; j < buttonsPerRow; j++ {
 					if i+j < len(currentCategoryNode.Children) {
 						child := currentCategoryNode.Children[i+j]
-						itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCategoryCallbackName+bot.CallbackSectionSeparator+child.Id())
+						itemButton := tgbotapi.NewInlineKeyboardButtonData(child.Name, MessageCategoryCallbackName+tgbot.CallbackSectionSeparator+child.Id())
 						row = append(row, itemButton)
 					}
 				}

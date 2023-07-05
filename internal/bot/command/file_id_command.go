@@ -4,9 +4,8 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 )
 
 const (
@@ -15,10 +14,10 @@ const (
 
 type FileIdCommand struct {
 	states  state.States
-	service *service.Service
+	service *tgbot.Service
 }
 
-func NewFileIdCommand(states state.States, service *service.Service) bot.Command {
+func NewFileIdCommand(states state.States, service *tgbot.Service) tgbot.Command {
 	return &FileIdCommand{
 		states:  states,
 		service: service,

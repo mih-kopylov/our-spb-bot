@@ -5,10 +5,9 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"github.com/samber/lo"
 	"strings"
 	"time"
@@ -20,11 +19,11 @@ const (
 
 type StatusCommand struct {
 	states       state.States
-	service      *service.Service
+	service      *tgbot.Service
 	messageQueue queue.MessageQueue
 }
 
-func NewStatusCommand(states state.States, service *service.Service, messageQueue queue.MessageQueue) bot.Command {
+func NewStatusCommand(states state.States, service *tgbot.Service, messageQueue queue.MessageQueue) tgbot.Command {
 	return &StatusCommand{
 		states:       states,
 		service:      service,

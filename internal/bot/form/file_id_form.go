@@ -3,8 +3,7 @@ package form
 import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"github.com/samber/lo"
 )
 
@@ -13,10 +12,10 @@ const (
 )
 
 type FileIdForm struct {
-	service *service.Service
+	service *tgbot.Service
 }
 
-func NewFileIdForm(service *service.Service) bot.Form {
+func NewFileIdForm(service *tgbot.Service) tgbot.Form {
 	return &FileIdForm{
 		service: service,
 	}

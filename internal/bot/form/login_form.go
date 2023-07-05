@@ -3,9 +3,8 @@ package form
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"github.com/samber/lo"
 	"strings"
 )
@@ -16,10 +15,10 @@ const (
 
 type LoginForm struct {
 	states  state.States
-	service *service.Service
+	service *tgbot.Service
 }
 
-func NewLoginForm(states state.States, service *service.Service) bot.Form {
+func NewLoginForm(states state.States, service *tgbot.Service) tgbot.Form {
 	return &LoginForm{
 		states:  states,
 		service: service,

@@ -6,9 +6,8 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 )
 
 const (
@@ -17,11 +16,11 @@ const (
 
 type MessageCommand struct {
 	states                  state.States
-	service                 *service.Service
+	service                 *tgbot.Service
 	messageCategoryCallback *callback.MessageCategoryCallback
 }
 
-func NewMessageCommand(states state.States, service *service.Service, messageCategoryCallback *callback.MessageCategoryCallback) bot.Command {
+func NewMessageCommand(states state.States, service *tgbot.Service, messageCategoryCallback *callback.MessageCategoryCallback) tgbot.Command {
 	return &MessageCommand{
 		states:                  states,
 		service:                 service,

@@ -4,10 +4,9 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/mih-kopylov/our-spb-bot/internal/util"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"github.com/samber/lo"
 	"strings"
 )
@@ -24,10 +23,10 @@ const (
 
 type SettingsAccountsCallback struct {
 	states  state.States
-	service *service.Service
+	service *tgbot.Service
 }
 
-func NewSettingsAccountsCallback(states state.States, service *service.Service) *SettingsAccountsCallback {
+func NewSettingsAccountsCallback(states state.States, service *tgbot.Service) *SettingsAccountsCallback {
 	return &SettingsAccountsCallback{
 		states:  states,
 		service: service,
@@ -48,7 +47,7 @@ func (h *SettingsAccountsCallback) Handle(callbackQuery *tgbotapi.CallbackQuery,
 		return h.HandleCategoryAccountsButtonClick(callbackQuery)
 	}
 
-	action, value, found := strings.Cut(data, bot.CallbackSectionSeparator)
+	action, value, found := strings.Cut(data, tgbot.CallbackSectionSeparator)
 	if !found {
 		return errorx.IllegalArgument.New("failed to parse callback data: %v", data)
 	}
@@ -108,7 +107,7 @@ func (h *SettingsAccountsCallback) setAccountStateButton(callbackQuery *tgbotapi
 		return err
 	}
 
-	return h.Handle(callbackQuery, actionsAccountButtonId+bot.CallbackSectionSeparator+accountLogin)
+	return h.Handle(callbackQuery, actionsAccountButtonId+tgbot.CallbackSectionSeparator+accountLogin)
 }
 
 func (h *SettingsAccountsCallback) configureAccountTimeButton(callbackQuery *tgbotapi.CallbackQuery, value string, userState *state.UserState) error {
@@ -202,7 +201,7 @@ func (h *SettingsAccountsCallback) createListAccountsReplyMarkup(callbackQuery *
 		if account.State == state.AccountStateDisabled {
 			buttonText += " ❌"
 		}
-		accountButton := tgbotapi.NewInlineKeyboardButtonData(buttonText, SettingsAccountsCallbackName+bot.CallbackSectionSeparator+actionsAccountButtonId+bot.CallbackSectionSeparator+account.Login)
+		accountButton := tgbotapi.NewInlineKeyboardButtonData(buttonText, SettingsAccountsCallbackName+tgbot.CallbackSectionSeparator+actionsAccountButtonId+tgbot.CallbackSectionSeparator+account.Login)
 		result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(accountButton))
 	}
 
@@ -211,11 +210,11 @@ func (h *SettingsAccountsCallback) createListAccountsReplyMarkup(callbackQuery *
 
 func (h *SettingsAccountsCallback) createActionMarkup(account state.Account) tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
-	disableButton := tgbotapi.NewInlineKeyboardButtonData("Выключить", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+disableAccountButtonId+bot.CallbackSectionSeparator+account.Login)
-	enableButton := tgbotapi.NewInlineKeyboardButtonData("Включить", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+enableAccountButtonId+bot.CallbackSectionSeparator+account.Login)
-	configureTimeButton := tgbotapi.NewInlineKeyboardButtonData("Настроить время", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+configureTimeAccountButtonId+bot.CallbackSectionSeparator+account.Login)
-	deleteButton := tgbotapi.NewInlineKeyboardButtonData("Удалить", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+deleteAccountButtonId+bot.CallbackSectionSeparator+account.Login)
-	listButton := tgbotapi.NewInlineKeyboardButtonData("⬆ К списку", SettingsAccountsCallbackName+bot.CallbackSectionSeparator+listAccountsButtonId)
+	disableButton := tgbotapi.NewInlineKeyboardButtonData("Выключить", SettingsAccountsCallbackName+tgbot.CallbackSectionSeparator+disableAccountButtonId+tgbot.CallbackSectionSeparator+account.Login)
+	enableButton := tgbotapi.NewInlineKeyboardButtonData("Включить", SettingsAccountsCallbackName+tgbot.CallbackSectionSeparator+enableAccountButtonId+tgbot.CallbackSectionSeparator+account.Login)
+	configureTimeButton := tgbotapi.NewInlineKeyboardButtonData("Настроить время", SettingsAccountsCallbackName+tgbot.CallbackSectionSeparator+configureTimeAccountButtonId+tgbot.CallbackSectionSeparator+account.Login)
+	deleteButton := tgbotapi.NewInlineKeyboardButtonData("Удалить", SettingsAccountsCallbackName+tgbot.CallbackSectionSeparator+deleteAccountButtonId+tgbot.CallbackSectionSeparator+account.Login)
+	listButton := tgbotapi.NewInlineKeyboardButtonData("⬆ К списку", SettingsAccountsCallbackName+tgbot.CallbackSectionSeparator+listAccountsButtonId)
 	row := tgbotapi.NewInlineKeyboardRow()
 	if account.State == state.AccountStateEnabled {
 		row = append(row, disableButton)

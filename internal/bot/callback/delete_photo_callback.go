@@ -3,10 +3,9 @@ package callback
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"strconv"
 )
 
@@ -16,11 +15,11 @@ const (
 
 type DeletePhotoCallback struct {
 	states       state.States
-	service      *service.Service
+	service      *tgbot.Service
 	messageQueue queue.MessageQueue
 }
 
-func NewDeletePhotoCallback(states state.States, service *service.Service, messageQueue queue.MessageQueue) *DeletePhotoCallback {
+func NewDeletePhotoCallback(states state.States, service *tgbot.Service, messageQueue queue.MessageQueue) *DeletePhotoCallback {
 	return &DeletePhotoCallback{
 		states:       states,
 		service:      service,
@@ -79,7 +78,7 @@ func (h *DeletePhotoCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data
 
 func (h *DeletePhotoCallback) CreateMarkup(messageId int) tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
-	deleteButton := tgbotapi.NewInlineKeyboardButtonData("🗑 Удалить", DeletePhotoCallbackName+bot.CallbackSectionSeparator+strconv.Itoa(messageId))
+	deleteButton := tgbotapi.NewInlineKeyboardButtonData("🗑 Удалить", DeletePhotoCallbackName+tgbot.CallbackSectionSeparator+strconv.Itoa(messageId))
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(deleteButton))
 	return result
 }

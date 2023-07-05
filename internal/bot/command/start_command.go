@@ -5,11 +5,10 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"strings"
 	"text/template"
 )
@@ -23,11 +22,11 @@ const (
 
 type StartCommand struct {
 	states  state.States
-	service *service.Service
+	service *tgbot.Service
 	info    *info.Info
 }
 
-func NewStartCommand(states state.States, service *service.Service, info *info.Info) bot.Command {
+func NewStartCommand(states state.States, service *tgbot.Service, info *info.Info) tgbot.Command {
 	return &StartCommand{
 		states:  states,
 		service: service,

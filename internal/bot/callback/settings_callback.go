@@ -3,8 +3,7 @@ package callback
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 )
 
 const (
@@ -14,12 +13,12 @@ const (
 )
 
 type SettingsCallback struct {
-	service                    *service.Service
+	service                    *tgbot.Service
 	settingsCategoriesCallback *SettingsCategoriesCallback
 	settingsAccountsCallback   *SettingsAccountsCallback
 }
 
-func NewSettingsCallback(service *service.Service, settingsCategoriesCallback *SettingsCategoriesCallback, settingsAccountsCallback *SettingsAccountsCallback) *SettingsCallback {
+func NewSettingsCallback(service *tgbot.Service, settingsCategoriesCallback *SettingsCategoriesCallback, settingsAccountsCallback *SettingsAccountsCallback) *SettingsCallback {
 	return &SettingsCallback{
 		service:                    service,
 		settingsCategoriesCallback: settingsCategoriesCallback,
@@ -44,8 +43,8 @@ func (h *SettingsCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data st
 
 func (h *SettingsCallback) CreateReplyMarkup() tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
-	categoriesButton := tgbotapi.NewInlineKeyboardButtonData("Категории", SettingsCallbackName+bot.CallbackSectionSeparator+categoriesButtonId)
-	accountsButton := tgbotapi.NewInlineKeyboardButtonData("Аккаунты", SettingsCallbackName+bot.CallbackSectionSeparator+accountsButtonId)
+	categoriesButton := tgbotapi.NewInlineKeyboardButtonData("Категории", SettingsCallbackName+tgbot.CallbackSectionSeparator+categoriesButtonId)
+	accountsButton := tgbotapi.NewInlineKeyboardButtonData("Аккаунты", SettingsCallbackName+tgbot.CallbackSectionSeparator+accountsButtonId)
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(categoriesButton, accountsButton))
 	return result
 }

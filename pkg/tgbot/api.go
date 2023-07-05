@@ -1,12 +1,12 @@
-package bot
+package tgbot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"go.uber.org/zap"
 )
 
-func NewApi(logger *zap.Logger, params TgApiParams) (*tgbotapi.BotAPI, error) {
-	err := tgbotapi.SetLogger(&TgLogger{logger: logger})
+func NewApi(logger *zap.Logger, params ApiParams) (*tgbotapi.BotAPI, error) {
+	err := tgbotapi.SetLogger(&Logger{logger: logger})
 	if err != nil {
 		return nil, ErrFailedToInitializeBot.Wrap(err, "failed to configure bot api logging")
 	}
@@ -20,20 +20,20 @@ func NewApi(logger *zap.Logger, params TgApiParams) (*tgbotapi.BotAPI, error) {
 	return api, nil
 }
 
-type TgApiParams struct {
+type ApiParams struct {
 	TelegramApiToken    string
 	TelegramApiEndpoint string
 	Debug               bool
 }
 
-type TgLogger struct {
+type Logger struct {
 	logger *zap.Logger
 }
 
-func (l *TgLogger) Println(v ...interface{}) {
+func (l *Logger) Println(v ...interface{}) {
 	l.logger.Sugar().Info(v...)
 }
 
-func (l *TgLogger) Printf(format string, v ...interface{}) {
+func (l *Logger) Printf(format string, v ...interface{}) {
 	l.logger.Sugar().Infof(format, v...)
 }

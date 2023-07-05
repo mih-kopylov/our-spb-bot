@@ -1,4 +1,4 @@
-package bot
+package tgbot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -9,6 +9,9 @@ var (
 	Errors                   = errorx.NewNamespace("Bot")
 	ErrFailedToInitializeBot = Errors.NewType("FailedToInitializeBot")
 	ErrFailedToDeleteMessage = Errors.NewType("FailedToDeleteMessage")
+	ErrFailedToSendReply     = Errors.NewType("FailedToSendReply")
+	ErrFailedToUploadFile    = Errors.NewType("FailedToUploadFile")
+	ErrFailedToDownloadFile  = Errors.NewType("FailedToDownloadFile")
 )
 
 type Command interface {

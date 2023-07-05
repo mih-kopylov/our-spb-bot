@@ -1,10 +1,8 @@
-package service
+package tgbot
 
 import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/imroc/req/v3"
-	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
 	"net/http"
 )
 
@@ -28,7 +26,7 @@ func (s *Service) SendMessageCustom(chat *tgbotapi.Chat, text string, messageAdj
 	messageAdjuster(&message)
 	result, err := s.api.Send(message)
 	if err != nil {
-		return nil, errorx.EnhanceStackTrace(err, "failed to send reply")
+		return nil, ErrFailedToSendReply.WrapWithNoMessage(err)
 	}
 
 	return &result, nil
@@ -37,7 +35,7 @@ func (s *Service) SendMessageCustom(chat *tgbotapi.Chat, text string, messageAdj
 func (s *Service) Send(chattable tgbotapi.Chattable) error {
 	_, err := s.api.Send(chattable)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to send reply")
+		return ErrFailedToSendReply.WrapWithNoMessage(err)
 	}
 
 	return nil
@@ -51,11 +49,11 @@ func (s *Service) DeleteMessageById(chatId int64, messageId int) error {
 	deleteMessage := tgbotapi.NewDeleteMessage(chatId, messageId)
 	resp, err := s.api.Request(deleteMessage)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to delete message: chat=%v, message=%v", chatId, messageId)
+		return ErrFailedToDeleteMessage.Wrap(err, "chat=%v, message=%v", chatId, messageId)
 	}
 
 	if !resp.Ok {
-		return bot.ErrFailedToDeleteMessage.New("resp=%v", resp)
+		return ErrFailedToDeleteMessage.New("resp=%v", resp)
 	}
 
 	return nil
@@ -73,7 +71,7 @@ func (s *Service) SendDocument(chat *tgbotapi.Chat, bytes []byte, name string) e
 	document := tgbotapi.NewDocument(chat.ID, file)
 	_, err := s.api.Send(document)
 	if err != nil {
-		return errorx.EnhanceStackTrace(err, "failed to send a document")
+		return ErrFailedToUploadFile.WrapWithNoMessage(err)
 	}
 
 	return nil
@@ -82,21 +80,21 @@ func (s *Service) SendDocument(chat *tgbotapi.Chat, bytes []byte, name string) e
 func (s *Service) DownloadFile(fileId string) ([]byte, error) {
 	fileUrl, err := s.api.GetFileDirectURL(fileId)
 	if err != nil {
-		return nil, errorx.EnhanceStackTrace(err, "failed to get file url")
+		return nil, ErrFailedToDownloadFile.Wrap(err, "failed to get file url")
 	}
 
 	response, err := req.R().Get(fileUrl)
 	if err != nil {
-		return nil, errorx.EnhanceStackTrace(err, "failed to donwload file")
+		return nil, ErrFailedToDownloadFile.WrapWithNoMessage(err)
 	}
 
 	fileBytes, err := response.ToBytes()
 	if err != nil {
-		return nil, errorx.EnhanceStackTrace(err, "failed to get response bytes: code=%v", response.StatusCode)
+		return nil, ErrFailedToDownloadFile.Wrap(err, "failed to get response bytes: code=%v", response.StatusCode)
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return nil, errorx.IllegalArgument.New("failed to download file: fileId=%v, fileUrl=%v, response=%v", fileId, fileUrl, fileBytes)
+		return nil, ErrFailedToDownloadFile.New("fileId=%v, fileUrl=%v, response=%v", fileId, fileUrl, fileBytes)
 	}
 
 	return fileBytes, nil

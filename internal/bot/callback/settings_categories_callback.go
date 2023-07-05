@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 )
 
 const (
@@ -21,11 +20,11 @@ const (
 
 type SettingsCategoriesCallback struct {
 	states    state.States
-	service   *service.Service
+	service   *tgbot.Service
 	spbClient spb.Client
 }
 
-func NewSettingsCategoriesCallback(states state.States, service *service.Service, spbClient spb.Client) *SettingsCategoriesCallback {
+func NewSettingsCategoriesCallback(states state.States, service *tgbot.Service, spbClient spb.Client) *SettingsCategoriesCallback {
 	return &SettingsCategoriesCallback{
 		states:    states,
 		service:   service,
@@ -103,10 +102,10 @@ func (h *SettingsCategoriesCallback) HandleCategorySettingsButtonClick(callbackQ
 
 func (h *SettingsCategoriesCallback) CreateReplyMarkup() tgbotapi.InlineKeyboardMarkup {
 	result := tgbotapi.NewInlineKeyboardMarkup()
-	downloadButton := tgbotapi.NewInlineKeyboardButtonData("Скачать свои категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+downloadButtonId)
-	uploadButton := tgbotapi.NewInlineKeyboardButtonData("Загрузить новые категории", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+uploadButtonId)
-	resetButton := tgbotapi.NewInlineKeyboardButtonData("Сбросить на значения по умолчанию", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+resetButtonId)
-	downloadPortalButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории портала", SettingsCategoriesCallbackName+bot.CallbackSectionSeparator+downloadPortalButtonId)
+	downloadButton := tgbotapi.NewInlineKeyboardButtonData("Скачать свои категории", SettingsCategoriesCallbackName+tgbot.CallbackSectionSeparator+downloadButtonId)
+	uploadButton := tgbotapi.NewInlineKeyboardButtonData("Загрузить новые категории", SettingsCategoriesCallbackName+tgbot.CallbackSectionSeparator+uploadButtonId)
+	resetButton := tgbotapi.NewInlineKeyboardButtonData("Сбросить на значения по умолчанию", SettingsCategoriesCallbackName+tgbot.CallbackSectionSeparator+resetButtonId)
+	downloadPortalButton := tgbotapi.NewInlineKeyboardButtonData("Скачать категории портала", SettingsCategoriesCallbackName+tgbot.CallbackSectionSeparator+downloadPortalButtonId)
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(downloadButton, uploadButton))
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(resetButton))
 	result.InlineKeyboard = append(result.InlineKeyboard, tgbotapi.NewInlineKeyboardRow(downloadPortalButton))

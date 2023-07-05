@@ -4,11 +4,11 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/mih-kopylov/our-spb-bot/internal/util"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
 	"math"
@@ -21,7 +21,7 @@ type MessageSender struct {
 	queue         MessageQueue
 	spbClient     spb.Client
 	api           *tgbotapi.BotAPI
-	service       *service.Service
+	service       *tgbot.Service
 	enabled       bool
 	sleepDuration time.Duration
 }
@@ -34,7 +34,7 @@ var (
 )
 
 func NewMessageSender(logger *zap.Logger, conf *config.Config, states state.States, queue MessageQueue, spbClient spb.Client,
-	api *tgbotapi.BotAPI, service *service.Service) *MessageSender {
+	api *tgbotapi.BotAPI, service *tgbot.Service) *MessageSender {
 	return &MessageSender{
 		logger:        logger,
 		states:        states,

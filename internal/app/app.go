@@ -5,7 +5,6 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/command"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
@@ -15,8 +14,8 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/mih-kopylov/our-spb-bot/internal/storage"
-	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
 	pkgmigration "github.com/mih-kopylov/our-spb-bot/pkg/migration"
+	"github.com/mih-kopylov/our-spb-bot/pkg/tgbot"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -40,7 +39,7 @@ func createApp(version string, commit string) fx.Option {
 			log.NewLogger,
 			config.NewConfig,
 			func(logger *zap.Logger, conf *config.Config) (*tgbotapi.BotAPI, error) {
-				return bot.NewApi(logger, bot.TgApiParams{
+				return tgbot.NewApi(logger, tgbot.ApiParams{
 					TelegramApiToken:    conf.TelegramApiToken,
 					TelegramApiEndpoint: conf.TelegramApiEndpoint,
 					Debug:               true,
@@ -55,9 +54,9 @@ func createApp(version string, commit string) fx.Option {
 			),
 			category.NewService,
 
-			service.NewService,
+			tgbot.NewService,
 			fx.Annotate(
-				bot.NewTgBot, fx.ParamTags(``, ``, ``, `group:"commands"`, `group:"callbacks"`, `group:"forms"`),
+				tgbot.NewBot, fx.ParamTags(``, ``, ``, `group:"commands"`, `group:"callbacks"`, `group:"forms"`),
 			),
 			queue.NewMessageSender,
 			fx.Annotate(
@@ -88,37 +87,37 @@ func createApp(version string, commit string) fx.Option {
 			//callbacks
 			callback.NewMessageCategoryCallback,
 			fx.Annotate(
-				func(cb *callback.MessageCategoryCallback) bot.Callback {
+				func(cb *callback.MessageCategoryCallback) tgbot.Callback {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
 			callback.NewDeleteMessageCallback,
 			fx.Annotate(
-				func(cb *callback.DeleteMessageCallback) bot.Callback {
+				func(cb *callback.DeleteMessageCallback) tgbot.Callback {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
 			callback.NewSettingsCallback,
 			fx.Annotate(
-				func(cb *callback.SettingsCallback) bot.Callback {
+				func(cb *callback.SettingsCallback) tgbot.Callback {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
 			callback.NewSettingsCategoriesCallback,
 			fx.Annotate(
-				func(cb *callback.SettingsCategoriesCallback) bot.Callback {
+				func(cb *callback.SettingsCategoriesCallback) tgbot.Callback {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
 			callback.NewSettingsAccountsCallback,
 			fx.Annotate(
-				func(cb *callback.SettingsAccountsCallback) bot.Callback {
+				func(cb *callback.SettingsAccountsCallback) tgbot.Callback {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
 			callback.NewDeletePhotoCallback,
 			fx.Annotate(
-				func(cb *callback.DeletePhotoCallback) bot.Callback {
+				func(cb *callback.DeletePhotoCallback) tgbot.Callback {
 					return cb
 				}, fx.ResultTags(`group:"callbacks"`),
 			),
@@ -154,7 +153,7 @@ func createApp(version string, commit string) fx.Option {
 			return manager.RunAllMigrations()
 		}),
 
-		fx.Invoke(func(bot *bot.TgBot) error {
+		fx.Invoke(func(bot *tgbot.Bot) error {
 			return bot.Start()
 		}),
 
