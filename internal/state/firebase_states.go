@@ -34,13 +34,8 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 	snapshot, err := doc.Get(context.Background())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			newState := UserState{
-				UserId: userId,
-			}
-			_, err := doc.Create(context.Background(), &newState)
-			if err != nil {
-				return nil, errorx.EnhanceStackTrace(err, "failed to create user state: userId=%v", userId)
-			}
+			newState := UserState{}
+			newState.UserId = userId
 			return &newState, nil
 		}
 

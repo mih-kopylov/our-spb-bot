@@ -14,14 +14,14 @@ const (
 )
 
 type DeleteMessageCallback struct {
-	states       state.States
+	stateManager state.Manager
 	service      *tgbot.Service
 	messageQueue queue.MessageQueue
 }
 
-func NewDeleteMessageCallback(states state.States, service *tgbot.Service, messageQueue queue.MessageQueue) *DeleteMessageCallback {
+func NewDeleteMessageCallback(stateManager state.Manager, service *tgbot.Service, messageQueue queue.MessageQueue) *DeleteMessageCallback {
 	return &DeleteMessageCallback{
-		states:       states,
+		stateManager: stateManager,
 		service:      service,
 		messageQueue: messageQueue,
 	}
@@ -32,7 +32,7 @@ func (h *DeleteMessageCallback) Name() string {
 }
 
 func (h *DeleteMessageCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	userState, err := h.states.GetState(callbackQuery.Message.Chat.ID)
+	userState, err := h.stateManager.GetState(callbackQuery.Message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}

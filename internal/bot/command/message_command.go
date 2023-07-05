@@ -15,14 +15,14 @@ const (
 )
 
 type MessageCommand struct {
-	states                  state.States
+	stateManager            state.Manager
 	service                 *tgbot.Service
 	messageCategoryCallback *callback.MessageCategoryCallback
 }
 
-func NewMessageCommand(states state.States, service *tgbot.Service, messageCategoryCallback *callback.MessageCategoryCallback) tgbot.Command {
+func NewMessageCommand(stateManager state.Manager, service *tgbot.Service, messageCategoryCallback *callback.MessageCategoryCallback) tgbot.Command {
 	return &MessageCommand{
-		states:                  states,
+		stateManager:            stateManager,
 		service:                 service,
 		messageCategoryCallback: messageCategoryCallback,
 	}
@@ -37,7 +37,7 @@ func (c *MessageCommand) Description() string {
 }
 
 func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
-	userState, err := c.states.GetState(message.Chat.ID)
+	userState, err := c.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -52,7 +52,7 @@ func (c *MessageCommand) Handle(message *tgbotapi.Message) error {
 
 	userState.ClearForm()
 	userState.MessageHandlerName = form.MessageFormName
-	err = c.states.SetState(userState)
+	err = c.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

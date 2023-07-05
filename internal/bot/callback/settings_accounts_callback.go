@@ -22,14 +22,14 @@ const (
 )
 
 type SettingsAccountsCallback struct {
-	states  state.States
-	service *tgbot.Service
+	stateManager state.Manager
+	service      *tgbot.Service
 }
 
-func NewSettingsAccountsCallback(states state.States, service *tgbot.Service) *SettingsAccountsCallback {
+func NewSettingsAccountsCallback(stateManager state.Manager, service *tgbot.Service) *SettingsAccountsCallback {
 	return &SettingsAccountsCallback{
-		states:  states,
-		service: service,
+		stateManager: stateManager,
+		service:      service,
 	}
 }
 
@@ -38,7 +38,7 @@ func (h *SettingsAccountsCallback) Name() string {
 }
 
 func (h *SettingsAccountsCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	userState, err := h.states.GetState(callbackQuery.Message.Chat.ID)
+	userState, err := h.stateManager.GetState(callbackQuery.Message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -84,7 +84,7 @@ func (h *SettingsAccountsCallback) handleDeleteAccountButton(callbackQuery *tgbo
 	}
 
 	userState.Accounts = append(userState.Accounts[0:index], userState.Accounts[index+1:]...)
-	err := h.states.SetState(userState)
+	err := h.stateManager.SetState(userState)
 	if err != nil {
 		return err
 	}
@@ -102,7 +102,7 @@ func (h *SettingsAccountsCallback) setAccountStateButton(callbackQuery *tgbotapi
 	}
 
 	userState.Accounts[index].State = accountState
-	err := h.states.SetState(userState)
+	err := h.stateManager.SetState(userState)
 	if err != nil {
 		return err
 	}
@@ -122,7 +122,7 @@ func (h *SettingsAccountsCallback) configureAccountTimeButton(callbackQuery *tgb
 
 	userState.MessageHandlerName = "AccountTimeForm"
 	userState.SetFormField(state.FormFieldLogin, accountLogin)
-	err := h.states.SetState(userState)
+	err := h.stateManager.SetState(userState)
 	if err != nil {
 		return err
 	}
@@ -188,7 +188,7 @@ func (h *SettingsAccountsCallback) HandleCategoryAccountsButtonClick(callbackQue
 func (h *SettingsAccountsCallback) createListAccountsReplyMarkup(callbackQuery *tgbotapi.CallbackQuery) (tgbotapi.InlineKeyboardMarkup, error) {
 	result := tgbotapi.NewInlineKeyboardMarkup()
 	result.InlineKeyboard = [][]tgbotapi.InlineKeyboardButton{}
-	userState, err := h.states.GetState(callbackQuery.Message.Chat.ID)
+	userState, err := h.stateManager.GetState(callbackQuery.Message.Chat.ID)
 	if err != nil {
 		return result, err
 	}

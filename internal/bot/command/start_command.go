@@ -21,16 +21,16 @@ const (
 )
 
 type StartCommand struct {
-	states  state.States
-	service *tgbot.Service
-	info    *info.Info
+	stateManager state.Manager
+	service      *tgbot.Service
+	info         *info.Info
 }
 
-func NewStartCommand(states state.States, service *tgbot.Service, info *info.Info) tgbot.Command {
+func NewStartCommand(stateManager state.Manager, service *tgbot.Service, info *info.Info) tgbot.Command {
 	return &StartCommand{
-		states:  states,
-		service: service,
-		info:    info,
+		stateManager: stateManager,
+		service:      service,
+		info:         info,
 	}
 }
 
@@ -43,7 +43,7 @@ func (c *StartCommand) Description() string {
 }
 
 func (c *StartCommand) Handle(message *tgbotapi.Message) error {
-	userState, err := c.states.GetState(message.Chat.ID)
+	userState, err := c.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		if errorx.IsOfType(err, state.ErrRateLimited) {
 			err = c.service.SendMessage(message.Chat, "Превышен лимит подключений к базе данных")
@@ -67,7 +67,7 @@ func (c *StartCommand) Handle(message *tgbotapi.Message) error {
 	if userState.Categories == "" {
 		userState.Categories = string(category.DefaultCategoriesText)
 	}
-	err = c.states.SetState(userState)
+	err = c.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

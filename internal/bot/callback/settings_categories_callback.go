@@ -19,16 +19,16 @@ const (
 )
 
 type SettingsCategoriesCallback struct {
-	states    state.States
-	service   *tgbot.Service
-	spbClient spb.Client
+	stateManager state.Manager
+	service      *tgbot.Service
+	spbClient    spb.Client
 }
 
-func NewSettingsCategoriesCallback(states state.States, service *tgbot.Service, spbClient spb.Client) *SettingsCategoriesCallback {
+func NewSettingsCategoriesCallback(stateManager state.Manager, service *tgbot.Service, spbClient spb.Client) *SettingsCategoriesCallback {
 	return &SettingsCategoriesCallback{
-		states:    states,
-		service:   service,
-		spbClient: spbClient,
+		stateManager: stateManager,
+		service:      service,
+		spbClient:    spbClient,
 	}
 }
 
@@ -37,7 +37,7 @@ func (h *SettingsCategoriesCallback) Name() string {
 }
 
 func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	userState, err := h.states.GetState(callbackQuery.Message.Chat.ID)
+	userState, err := h.stateManager.GetState(callbackQuery.Message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -55,7 +55,7 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 Его нужно скачать, отредактировать и загрузить обновлённые категории.`)
 	case uploadButtonId:
 		userState.MessageHandlerName = "UploadCategoriesForm"
-		err = h.states.SetState(userState)
+		err = h.stateManager.SetState(userState)
 		if err != nil {
 			return err
 		}
@@ -63,7 +63,7 @@ func (h *SettingsCategoriesCallback) Handle(callbackQuery *tgbotapi.CallbackQuer
 		return h.service.SendMessage(callbackQuery.Message.Chat, "Загрузите документ с категориями")
 	case resetButtonId:
 		userState.Categories = string(category.DefaultCategoriesText)
-		err = h.states.SetState(userState)
+		err = h.stateManager.SetState(userState)
 		if err != nil {
 			return err
 		}

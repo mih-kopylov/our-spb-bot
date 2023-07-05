@@ -47,7 +47,7 @@ func createApp(version string, commit string) fx.Option {
 			},
 			storage.NewFirebaseStorage,
 			fx.Annotate(
-				state.NewFirebaseState, fx.As(new(state.States)),
+				state.NewFirebaseState, fx.As(new(state.Manager)),
 			),
 			fx.Annotate(
 				queue.NewFirebaseQueue, fx.As(new(queue.MessageQueue)),

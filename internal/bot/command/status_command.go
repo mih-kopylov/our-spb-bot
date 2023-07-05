@@ -18,14 +18,14 @@ const (
 )
 
 type StatusCommand struct {
-	states       state.States
+	stateManager state.Manager
 	service      *tgbot.Service
 	messageQueue queue.MessageQueue
 }
 
-func NewStatusCommand(states state.States, service *tgbot.Service, messageQueue queue.MessageQueue) tgbot.Command {
+func NewStatusCommand(stateManager state.Manager, service *tgbot.Service, messageQueue queue.MessageQueue) tgbot.Command {
 	return &StatusCommand{
-		states:       states,
+		stateManager: stateManager,
 		service:      service,
 		messageQueue: messageQueue,
 	}
@@ -40,7 +40,7 @@ func (c *StatusCommand) Description() string {
 }
 
 func (c *StatusCommand) Handle(message *tgbotapi.Message) error {
-	userState, err := c.states.GetState(message.Chat.ID)
+	userState, err := c.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		if errorx.IsOfType(err, state.ErrRateLimited) {
 			err = c.service.SendMessage(message.Chat, "Превышен лимит подключений к базе данных")

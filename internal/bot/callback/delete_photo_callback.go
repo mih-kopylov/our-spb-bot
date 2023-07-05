@@ -14,14 +14,14 @@ const (
 )
 
 type DeletePhotoCallback struct {
-	states       state.States
+	stateManager state.Manager
 	service      *tgbot.Service
 	messageQueue queue.MessageQueue
 }
 
-func NewDeletePhotoCallback(states state.States, service *tgbot.Service, messageQueue queue.MessageQueue) *DeletePhotoCallback {
+func NewDeletePhotoCallback(stateManager state.Manager, service *tgbot.Service, messageQueue queue.MessageQueue) *DeletePhotoCallback {
 	return &DeletePhotoCallback{
-		states:       states,
+		stateManager: stateManager,
 		service:      service,
 		messageQueue: messageQueue,
 	}
@@ -32,7 +32,7 @@ func (h *DeletePhotoCallback) Name() string {
 }
 
 func (h *DeletePhotoCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	userState, err := h.states.GetState(callbackQuery.Message.Chat.ID)
+	userState, err := h.stateManager.GetState(callbackQuery.Message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -48,7 +48,7 @@ func (h *DeletePhotoCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data
 	}
 
 	userState.RemoveValueFromStringSlice(state.FormFieldFiles, fileId)
-	err = h.states.SetState(userState)
+	err = h.stateManager.SetState(userState)
 	if err != nil {
 		return err
 	}

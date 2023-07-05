@@ -21,7 +21,7 @@ const (
 )
 
 type MessageForm struct {
-	states                state.States
+	stateManager          state.Manager
 	service               *tgbot.Service
 	messageQueue          queue.MessageQueue
 	categoryService       *category.Service
@@ -33,11 +33,11 @@ func (f *MessageForm) Name() string {
 	return MessageFormName
 }
 
-func NewMessageForm(states state.States, service *tgbot.Service,
+func NewMessageForm(stateManager state.Manager, service *tgbot.Service,
 	messageQueue queue.MessageQueue, categoryService *category.Service,
 	deleteMessageCallback *callback.DeleteMessageCallback, deletePhotoCallback *callback.DeletePhotoCallback) tgbot.Form {
 	return &MessageForm{
-		states:                states,
+		stateManager:          stateManager,
 		service:               service,
 		messageQueue:          messageQueue,
 		categoryService:       categoryService,
@@ -47,7 +47,7 @@ func NewMessageForm(states state.States, service *tgbot.Service,
 }
 
 func (f *MessageForm) Handle(message *tgbotapi.Message) error {
-	userState, err := f.states.GetState(message.Chat.ID)
+	userState, err := f.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -143,7 +143,7 @@ func (f *MessageForm) handleLocation(message *tgbotapi.Message, userState *state
 	userState.ClearForm()
 	userState.MessageHandlerName = ""
 
-	err = f.states.SetState(userState)
+	err = f.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
@@ -170,7 +170,7 @@ func (f *MessageForm) handlePhoto(message *tgbotapi.Message, userState *state.Us
 
 	userState.AddValueToStringSlice(state.FormFieldFiles, maxPhotoSize.FileID)
 	userState.PutValueToMap(state.FormFieldMessageIdFile, strconv.Itoa(message.MessageID), maxPhotoSize.FileID)
-	err := f.states.SetState(userState)
+	err := f.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
@@ -216,7 +216,7 @@ Id: %v
 func (f *MessageForm) handleText(message *tgbotapi.Message, userState *state.UserState) error {
 	userState.SetFormField(state.FormFieldMessageText, message.Text)
 
-	err := f.states.SetState(userState)
+	err := f.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

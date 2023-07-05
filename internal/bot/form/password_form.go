@@ -15,27 +15,27 @@ const (
 )
 
 type PasswordForm struct {
-	states    state.States
-	service   *tgbot.Service
-	spbClient spb.Client
-	queue     queue.MessageQueue
+	stateManager state.Manager
+	service      *tgbot.Service
+	spbClient    spb.Client
+	queue        queue.MessageQueue
 }
 
 func (f *PasswordForm) Name() string {
 	return PasswordFormName
 }
 
-func NewPasswordForm(states state.States, service *tgbot.Service, spbClient spb.Client, queue queue.MessageQueue) tgbot.Form {
+func NewPasswordForm(stateManager state.Manager, service *tgbot.Service, spbClient spb.Client, queue queue.MessageQueue) tgbot.Form {
 	return &PasswordForm{
-		states:    states,
-		service:   service,
-		spbClient: spbClient,
-		queue:     queue,
+		stateManager: stateManager,
+		service:      service,
+		spbClient:    spbClient,
+		queue:        queue,
 	}
 }
 
 func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
-	userState, err := f.states.GetState(message.Chat.ID)
+	userState, err := f.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -62,7 +62,7 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 
 	tokenResponse, err := f.spbClient.Login(login, password)
 	if err != nil {
-		err = f.states.SetState(userState)
+		err = f.stateManager.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
@@ -80,7 +80,7 @@ func (f *PasswordForm) Handle(message *tgbotapi.Message) error {
 		State:            state.AccountStateEnabled,
 	})
 
-	err = f.states.SetState(userState)
+	err = f.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

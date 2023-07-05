@@ -18,15 +18,15 @@ const (
 
 type MessageCategoryCallback struct {
 	logger          *zap.Logger
-	states          state.States
+	stateManager    state.Manager
 	service         *tgbot.Service
 	categoryService *category.Service
 }
 
-func NewMessageCategoryCallback(logger *zap.Logger, states state.States, service *tgbot.Service, categoryService *category.Service) *MessageCategoryCallback {
+func NewMessageCategoryCallback(logger *zap.Logger, stateManager state.Manager, service *tgbot.Service, categoryService *category.Service) *MessageCategoryCallback {
 	return &MessageCategoryCallback{
 		logger:          logger,
-		states:          states,
+		stateManager:    stateManager,
 		service:         service,
 		categoryService: categoryService,
 	}
@@ -37,7 +37,7 @@ func (h *MessageCategoryCallback) Name() string {
 }
 
 func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, data string) error {
-	userState, err := h.states.GetState(callbackQuery.Message.Chat.ID)
+	userState, err := h.stateManager.GetState(callbackQuery.Message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -91,7 +91,7 @@ func (h *MessageCategoryCallback) Handle(callbackQuery *tgbotapi.CallbackQuery, 
 			userState.SetFormField(state.FormFieldCurrentCategoryNode, childFound.Id())
 		}
 
-		err = h.states.SetState(userState)
+		err = h.stateManager.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}

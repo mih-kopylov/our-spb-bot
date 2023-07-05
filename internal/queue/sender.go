@@ -17,7 +17,7 @@ import (
 
 type MessageSender struct {
 	logger        *zap.Logger
-	states        state.States
+	stateManager  state.Manager
 	queue         MessageQueue
 	spbClient     spb.Client
 	api           *tgbotapi.BotAPI
@@ -33,11 +33,11 @@ var (
 	ErrAllAccountsRateLimited = Errors.NewType("AllAccountsRateLimited")
 )
 
-func NewMessageSender(logger *zap.Logger, conf *config.Config, states state.States, queue MessageQueue, spbClient spb.Client,
+func NewMessageSender(logger *zap.Logger, conf *config.Config, stateManager state.Manager, queue MessageQueue, spbClient spb.Client,
 	api *tgbotapi.BotAPI, service *tgbot.Service) *MessageSender {
 	return &MessageSender{
 		logger:        logger,
-		states:        states,
+		stateManager:  stateManager,
 		queue:         queue,
 		spbClient:     spbClient,
 		api:           api,
@@ -79,7 +79,7 @@ func (s *MessageSender) sendNextMessage() {
 
 	s.logger.Debug("message found", zap.String("id", message.Id))
 
-	userState, err := s.states.GetState(message.UserId)
+	userState, err := s.stateManager.GetState(message.UserId)
 	if err != nil {
 		s.logger.Error("failed to get user state",
 			zap.Error(err))
@@ -157,7 +157,7 @@ Id: %v
 	}
 
 	userState.SentMessagesCount++
-	err = s.states.SetState(userState)
+	err = s.stateManager.SetState(userState)
 	if err != nil {
 		s.logger.Error("failed to set user state",
 			zap.Error(err))
@@ -170,7 +170,7 @@ Id: %v
 func (s *MessageSender) handleMessageSendingError(err error, userState *state.UserState, account *state.Account, appropriateAccountsCount int, message *Message) {
 	if errorx.IsOfType(err, spb.ErrUnauthorized) {
 		account.Token = ""
-		err = s.states.SetState(userState)
+		err = s.stateManager.SetState(userState)
 		if err != nil {
 			s.logger.Error("failed to set user state",
 				zap.Error(err))
@@ -191,7 +191,7 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 		nextTryTime := time.Date(year, month, day, hour, min, 0, 0, util.SpbLocation)
 
 		account.RateLimitedUntil = nextTryTime
-		err = s.states.SetState(userState)
+		err = s.stateManager.SetState(userState)
 		if err != nil {
 			s.logger.Error("failed to set user state",
 				zap.Error(err))
@@ -211,7 +211,7 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Message, account *state.Account) error {
 	if account.Login == "" {
 		account.State = state.AccountStateDisabled
-		err := s.states.SetState(userState)
+		err := s.stateManager.SetState(userState)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to set user state")
 		}
@@ -227,7 +227,7 @@ func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Mess
 		account.Login = ""
 		account.Password = ""
 		account.State = state.AccountStateDisabled
-		err2 := s.states.SetState(userState)
+		err2 := s.stateManager.SetState(userState)
 		if err2 != nil {
 			return errorx.EnhanceStackTrace(err2, "failed to set user state")
 		}
@@ -238,7 +238,7 @@ func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Mess
 	s.logger.Info("new token obtained",
 		zap.String("id", message.Id))
 	account.Token = tokenResponse.AccessToken
-	err = s.states.SetState(userState)
+	err = s.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

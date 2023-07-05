@@ -15,15 +15,15 @@ const (
 
 type UploadCategoriesForm struct {
 	logger          *zap.Logger
-	states          state.States
+	stateManager    state.Manager
 	service         *tgbot.Service
 	categoryService *category.Service
 }
 
-func NewUploadCategoriesForm(logger *zap.Logger, states state.States, service *tgbot.Service, categoryService *category.Service) tgbot.Form {
+func NewUploadCategoriesForm(logger *zap.Logger, stateManager state.Manager, service *tgbot.Service, categoryService *category.Service) tgbot.Form {
 	return &UploadCategoriesForm{
 		logger:          logger,
-		states:          states,
+		stateManager:    stateManager,
 		service:         service,
 		categoryService: categoryService,
 	}
@@ -34,7 +34,7 @@ func (f *UploadCategoriesForm) Name() string {
 }
 
 func (f *UploadCategoriesForm) Handle(message *tgbotapi.Message) error {
-	userState, err := f.states.GetState(message.Chat.ID)
+	userState, err := f.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -64,7 +64,7 @@ func (f *UploadCategoriesForm) Handle(message *tgbotapi.Message) error {
 
 	userState.Categories = string(fileContent)
 	userState.MessageHandlerName = ""
-	err = f.states.SetState(userState)
+	err = f.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

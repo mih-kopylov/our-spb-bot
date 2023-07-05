@@ -17,25 +17,25 @@ const (
 )
 
 type AccountTimeForm struct {
-	logger  *zap.Logger
-	states  state.States
-	service *tgbot.Service
+	logger       *zap.Logger
+	stateManager state.Manager
+	service      *tgbot.Service
 }
 
 func (f *AccountTimeForm) Name() string {
 	return AccountTimeFormName
 }
 
-func NewAccountTimeForm(logger *zap.Logger, states state.States, service *tgbot.Service) tgbot.Form {
+func NewAccountTimeForm(logger *zap.Logger, stateManager state.Manager, service *tgbot.Service) tgbot.Form {
 	return &AccountTimeForm{
-		logger:  logger,
-		states:  states,
-		service: service,
+		logger:       logger,
+		stateManager: stateManager,
+		service:      service,
 	}
 }
 
 func (f *AccountTimeForm) Handle(message *tgbotapi.Message) error {
-	userState, err := f.states.GetState(message.Chat.ID)
+	userState, err := f.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -73,7 +73,7 @@ func (f *AccountTimeForm) Handle(message *tgbotapi.Message) error {
 	userState.MessageHandlerName = ""
 	userState.ClearForm()
 
-	err = f.states.SetState(userState)
+	err = f.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

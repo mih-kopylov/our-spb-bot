@@ -14,14 +14,14 @@ const (
 )
 
 type LoginForm struct {
-	states  state.States
-	service *tgbot.Service
+	stateManager state.Manager
+	service      *tgbot.Service
 }
 
-func NewLoginForm(states state.States, service *tgbot.Service) tgbot.Form {
+func NewLoginForm(stateManager state.Manager, service *tgbot.Service) tgbot.Form {
 	return &LoginForm{
-		states:  states,
-		service: service,
+		stateManager: stateManager,
+		service:      service,
 	}
 }
 
@@ -30,7 +30,7 @@ func (f *LoginForm) Name() string {
 }
 
 func (f *LoginForm) Handle(message *tgbotapi.Message) error {
-	userState, err := f.states.GetState(message.Chat.ID)
+	userState, err := f.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
@@ -53,7 +53,7 @@ func (f *LoginForm) Handle(message *tgbotapi.Message) error {
 
 	userState.SetFormField(state.FormFieldLogin, login)
 	userState.MessageHandlerName = PasswordFormName
-	err = f.states.SetState(userState)
+	err = f.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

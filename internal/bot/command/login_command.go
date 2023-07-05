@@ -14,14 +14,14 @@ const (
 )
 
 type LoginCommand struct {
-	states  state.States
-	service *tgbot.Service
+	stateManager state.Manager
+	service      *tgbot.Service
 }
 
-func NewLoginCommand(states state.States, service *tgbot.Service) tgbot.Command {
+func NewLoginCommand(stateManager state.Manager, service *tgbot.Service) tgbot.Command {
 	return &LoginCommand{
-		states:  states,
-		service: service,
+		stateManager: stateManager,
+		service:      service,
 	}
 }
 func (c *LoginCommand) Name() string {
@@ -33,13 +33,13 @@ func (c *LoginCommand) Description() string {
 }
 
 func (c *LoginCommand) Handle(message *tgbotapi.Message) error {
-	userState, err := c.states.GetState(message.Chat.ID)
+	userState, err := c.stateManager.GetState(message.Chat.ID)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to get user state")
 	}
 
 	userState.MessageHandlerName = form.LoginFormName
-	err = c.states.SetState(userState)
+	err = c.stateManager.SetState(userState)
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}

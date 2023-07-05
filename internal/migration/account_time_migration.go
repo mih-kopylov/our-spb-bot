@@ -10,21 +10,21 @@ import (
 )
 
 type AccountTimeMigration struct {
-	logger *zap.Logger
-	states state.States
+	logger       *zap.Logger
+	stateManager state.Manager
 }
 
-func NewAccountTimeMigration(logger *zap.Logger, states state.States) migration.Migration {
+func NewAccountTimeMigration(logger *zap.Logger, stateManager state.Manager) migration.Migration {
 	return &AccountTimeMigration{
-		logger: logger,
-		states: states,
+		logger:       logger,
+		stateManager: stateManager,
 	}
 }
 
 func (m *AccountTimeMigration) Migrate() error {
 	m.logger.Info("running account time migration")
 
-	allUserStates, err := m.states.GetAllStates()
+	allUserStates, err := m.stateManager.GetAllStates()
 	if err != nil {
 		return errorx.EnhanceStackTrace(err, "failed to migrate account time")
 	}
@@ -39,7 +39,7 @@ func (m *AccountTimeMigration) Migrate() error {
 		}
 
 		if migrated {
-			err = m.states.SetState(userState)
+			err = m.stateManager.SetState(userState)
 			if err != nil {
 				return errorx.EnhanceStackTrace(err, "failed to migrate account time")
 			}

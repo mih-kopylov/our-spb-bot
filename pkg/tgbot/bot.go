@@ -11,19 +11,19 @@ import (
 )
 
 type Bot struct {
-	logger    *zap.Logger
-	api       *tgbotapi.BotAPI
-	states    state.States
-	commands  map[string]Command
-	callbacks map[string]Callback
-	forms     map[string]Form
+	logger       *zap.Logger
+	api          *tgbotapi.BotAPI
+	stateManager state.Manager
+	commands     map[string]Command
+	callbacks    map[string]Callback
+	forms        map[string]Form
 }
 
-func NewBot(logger *zap.Logger, api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback, forms []Form) *Bot {
+func NewBot(logger *zap.Logger, api *tgbotapi.BotAPI, stateManager state.Manager, commands []Command, callbacks []Callback, forms []Form) *Bot {
 	return &Bot{
-		logger: logger,
-		api:    api,
-		states: states,
+		logger:       logger,
+		api:          api,
+		stateManager: stateManager,
 		commands: lo.SliceToMap(commands, func(item Command) (string, Command) {
 			return item.Name(), item
 		}),
@@ -130,7 +130,7 @@ func (b *Bot) handleMessage(message *tgbotapi.Message) error {
 			return errorx.EnhanceStackTrace(err, "failed to handle command")
 		}
 	} else {
-		userState, err := b.states.GetState(message.Chat.ID)
+		userState, err := b.stateManager.GetState(message.Chat.ID)
 		if err != nil {
 			return errorx.EnhanceStackTrace(err, "failed to get user state")
 		}
