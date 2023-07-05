@@ -2,19 +2,19 @@ package migration
 
 import "go.uber.org/zap"
 
-type Migrations struct {
+type Manager struct {
 	logger     *zap.Logger
 	migrations []Migration
 }
 
-func NewMigrations(logger *zap.Logger, migrations []Migration) *Migrations {
-	return &Migrations{
+func NewManager(logger *zap.Logger, migrations []Migration) *Manager {
+	return &Manager{
 		logger:     logger,
 		migrations: migrations,
 	}
 }
 
-func (m *Migrations) RunAll() error {
+func (m *Manager) RunAllMigrations() error {
 	for _, migration := range m.migrations {
 		err := migration.Migrate()
 		if err != nil {

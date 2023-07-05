@@ -1,8 +1,7 @@
 package app
 
 import (
-	"github.com/mih-kopylov/our-spb-bot/internal/bot"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot/api"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/command"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/form"
@@ -16,6 +15,8 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/spb"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/mih-kopylov/our-spb-bot/internal/storage"
+	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
+	pkgmigration "github.com/mih-kopylov/our-spb-bot/pkg/migration"
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap"
@@ -38,7 +39,13 @@ func createApp(version string, commit string) fx.Option {
 		fx.Provide(
 			log.NewLogger,
 			config.NewConfig,
-			api.NewApi,
+			func(logger *zap.Logger, conf *config.Config) (*tgbotapi.BotAPI, error) {
+				return bot.NewApi(logger, bot.TgApiParams{
+					TelegramApiToken:    conf.TelegramApiToken,
+					TelegramApiEndpoint: conf.TelegramApiEndpoint,
+					Debug:               true,
+				})
+			},
 			storage.NewFirebaseStorage,
 			fx.Annotate(
 				state.NewFirebaseState, fx.As(new(state.States)),
@@ -136,15 +143,15 @@ func createApp(version string, commit string) fx.Option {
 			),
 			//migrations
 			fx.Annotate(
-				migration.NewMigrations, fx.ParamTags(``, `group:"migrations"`),
+				pkgmigration.NewManager, fx.ParamTags(``, `group:"migrations"`),
 			),
 			fx.Annotate(
 				migration.NewAccountTimeMigration, fx.ResultTags(`group:"migrations"`),
 			),
 		),
-		
-		fx.Invoke(func(migrations *migration.Migrations) error {
-			return migrations.RunAll()
+
+		fx.Invoke(func(manager *pkgmigration.Manager) error {
+			return manager.RunAllMigrations()
 		}),
 
 		fx.Invoke(func(bot *bot.TgBot) error {

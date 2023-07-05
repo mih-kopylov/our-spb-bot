@@ -4,6 +4,7 @@ import (
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/mih-kopylov/our-spb-bot/internal/util"
+	"github.com/mih-kopylov/our-spb-bot/pkg/migration"
 	"go.uber.org/zap"
 	"time"
 )
@@ -13,7 +14,7 @@ type AccountTimeMigration struct {
 	states state.States
 }
 
-func NewAccountTimeMigration(logger *zap.Logger, states state.States) Migration {
+func NewAccountTimeMigration(logger *zap.Logger, states state.States) migration.Migration {
 	return &AccountTimeMigration{
 		logger: logger,
 		states: states,

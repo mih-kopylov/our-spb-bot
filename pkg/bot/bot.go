@@ -10,11 +10,6 @@ import (
 	"strings"
 )
 
-var (
-	Errors                   = errorx.NewNamespace("Bot")
-	ErrFailedToDeleteMessage = Errors.NewType("FailedToDeleteMessage")
-)
-
 type TgBot struct {
 	logger    *zap.Logger
 	api       *tgbotapi.BotAPI
@@ -65,7 +60,8 @@ func (b *TgBot) processUpdates() {
 			err = errorx.EnhanceStackTrace(err, "failed to handle update")
 			b.logger.Error("",
 				zap.Int64("chat", update.FromChat().ID),
-				zap.Error(err))
+				zap.Error(err),
+			)
 		}
 	}
 }

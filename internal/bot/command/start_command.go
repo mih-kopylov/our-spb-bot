@@ -5,11 +5,11 @@ import (
 	"fmt"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/bot"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/service"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
+	"github.com/mih-kopylov/our-spb-bot/pkg/bot"
 	"strings"
 	"text/template"
 )
