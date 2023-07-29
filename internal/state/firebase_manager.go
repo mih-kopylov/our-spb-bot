@@ -4,7 +4,6 @@ import (
 	"cloud.google.com/go/firestore"
 	"context"
 	"github.com/joomcode/errorx"
-	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -17,26 +16,28 @@ const (
 	collection = "states"
 )
 
-type FirebaseStates struct {
-	logger  *zap.Logger
-	storage *firestore.Client
+type FirebaseManager[S BaseUserState] struct {
+	logger   *zap.Logger
+	storage  *firestore.Client
+	newState S
 }
 
-func NewFirebaseState(logger *zap.Logger, storage *firestore.Client) *FirebaseStates {
-	return &FirebaseStates{
-		logger:  logger,
-		storage: storage,
+func NewFirebaseManager[S BaseUserState](logger *zap.Logger, storage *firestore.Client, newState S) *FirebaseManager[S] {
+	return &FirebaseManager[S]{
+		logger:   logger,
+		storage:  storage,
+		newState: newState,
 	}
 }
 
-func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
+func (f *FirebaseManager[S]) GetState(userId int64) (*S, error) {
 	doc := f.storage.Collection(collection).Doc(strconv.FormatInt(userId, 10))
 	snapshot, err := doc.Get(context.Background())
 	if err != nil {
 		if status.Code(err) == codes.NotFound {
-			newState := UserState{}
-			newState.UserId = userId
-			return &newState, nil
+			result := f.newState
+			result.UserId = userId
+			return &result, nil
 		}
 
 		if status.Code(err) == codes.ResourceExhausted {
@@ -46,23 +47,19 @@ func (f *FirebaseStates) GetState(userId int64) (*UserState, error) {
 		return nil, errorx.EnhanceStackTrace(err, "failed to get state document snapshot")
 	}
 
-	var state UserState
-	err = snapshot.DataTo(&state)
+	//var state UserState
+	err = snapshot.DataTo(&newState)
 	if err != nil {
 		return nil, errorx.EnhanceStackTrace(err, "failed to deserialize user state data: userId=%v", userId)
 	}
 
-	if state.Categories == "" {
-		state.Categories = string(category.DefaultCategoriesText)
-	}
-
-	state.logger = f.logger
-	f.debugUserState(&state, "read user state")
+	newState.logger = f.logger
+	f.debugUserState(&newState, "read user state")
 
 	return &state, nil
 }
 
-func (f *FirebaseStates) SetState(state *UserState) error {
+func (f *FirebaseManager[S]) SetState(state *UserState) error {
 	state.LastAccessAt = time.Now()
 	f.debugUserState(state, "saving user state")
 
@@ -78,7 +75,7 @@ func (f *FirebaseStates) SetState(state *UserState) error {
 	return nil
 }
 
-func (f *FirebaseStates) GetAllStates() ([]*UserState, error) {
+func (f *FirebaseManager[S]) GetAllStates() ([]*UserState, error) {
 	snapshots, err := f.storage.Collection(collection).Documents(context.Background()).GetAll()
 	if err != nil {
 		return nil, errorx.EnhanceStackTrace(err, "failed to get all user states")
@@ -97,7 +94,7 @@ func (f *FirebaseStates) GetAllStates() ([]*UserState, error) {
 	return states, nil
 }
 
-func (f *FirebaseStates) debugUserState(state *UserState, message string) {
+func (f *FirebaseManager[S]) debugUserState(state *S, message string) {
 	if ce := f.logger.Check(zap.DebugLevel, message); ce != nil {
 		stateYaml, err := yaml.Marshal(state)
 		if err != nil {

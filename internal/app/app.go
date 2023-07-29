@@ -1,6 +1,7 @@
 package app
 
 import (
+	"cloud.google.com/go/firestore"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/callback"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot/command"
@@ -46,9 +47,9 @@ func createApp(version string, commit string) fx.Option {
 				})
 			},
 			storage.NewFirebaseStorage,
-			fx.Annotate(
-				state.NewFirebaseState, fx.As(new(state.Manager)),
-			),
+			func(logger *zap.Logger, storage *firestore.Client) state.Manager[state.UserState] {
+
+			},
 			fx.Annotate(
 				queue.NewFirebaseQueue, fx.As(new(queue.MessageQueue)),
 			),

@@ -4,13 +4,13 @@ import (
 	"github.com/joomcode/errorx"
 )
 
-type Manager interface {
+type Manager[S BaseUserState] interface {
 	// GetState Reads a user from the storage
-	GetState(userId int64) (*UserState, error)
+	GetState(userId int64) (*S, error)
 	// SetState Puts a new user into the storage. If the user already exists in the context, it's kept,
-	SetState(state *UserState) error
+	SetState(state *S) error
 	// GetAllStates Reads all users from the storage
-	GetAllStates() ([]*UserState, error)
+	GetAllStates() ([]*S, error)
 }
 
 var (
