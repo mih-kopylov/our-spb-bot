@@ -125,16 +125,16 @@ func (m *Mocks) AfterEach(t *testing.T) {
 
 func (m *Mocks) SetupGetMeMock(t *testing.T) {
 	err := m.WiremockClient.StubFor(wiremock.Post(wiremock.URLPathMatching("/bot.+/getMe")).
-		WillReturnJSON(
-			map[string]any{
+		WillReturnResponse(wiremock.NewResponse().
+			WithJSONBody(map[string]any{
 				"ok": true,
 				"result": map[string]any{
 					"id":     1,
 					"is_bot": true,
 				},
-			},
-			map[string]string{"Content-Type": "application/json"},
-			200,
+			}).
+			WithHeaders(map[string]string{"Content-Type": "application/json"}).
+			WithStatus(200),
 		))
 	if err != nil {
 		t.Error(err)
@@ -143,12 +143,12 @@ func (m *Mocks) SetupGetMeMock(t *testing.T) {
 
 func (m *Mocks) SetupSetMyCommandsMock(t *testing.T) {
 	err := m.WiremockClient.StubFor(wiremock.Post(wiremock.URLPathMatching("/bot.+/setMyCommands")).
-		WillReturnJSON(
-			map[string]any{
+		WillReturnResponse(wiremock.NewResponse().
+			WithJSONBody(map[string]any{
 				"ok": true,
-			},
-			map[string]string{"Content-Type": "application/json"},
-			200,
+			}).
+			WithHeaders(map[string]string{"Content-Type": "application/json"}).
+			WithStatus(200),
 		))
 	if err != nil {
 		t.Error(err)
@@ -156,15 +156,13 @@ func (m *Mocks) SetupSetMyCommandsMock(t *testing.T) {
 }
 func (m *Mocks) SetupGetUpdatesMock(t *testing.T) {
 	err := m.WiremockClient.StubFor(wiremock.Post(wiremock.URLPathMatching("/bot.+/getUpdates")).
-		WithFixedDelayMilliseconds(time.Second).
-		WillReturnJSON(
-			map[string]any{
+		WillReturnResponse(wiremock.NewResponse().
+			WithJSONBody(map[string]any{
 				"ok":     true,
 				"result": []any{},
-			},
-			map[string]string{"Content-Type": "application/json"},
-			200,
-		))
+			}).
+			WithHeaders(map[string]string{"Content-Type": "application/json"}).
+			WithStatus(200).WithFixedDelay(time.Second)))
 	if err != nil {
 		t.Error(err)
 	}
