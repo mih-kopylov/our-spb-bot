@@ -8,7 +8,7 @@ require (
 	github.com/caarlos0/env/v7 v7.1.0
 	github.com/docker/go-connections v0.4.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
-	github.com/imroc/req/v3 v3.41.9
+	github.com/imroc/req/v3 v3.41.10
 	github.com/joomcode/errorx v1.1.1
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/samber/lo v1.38.1
@@ -90,7 +90,7 @@ require (
 	golang.org/x/tools v0.12.1-0.20230815132531-74c255bcf846 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
-	google.golang.org/appengine/v2 v2.0.4 // indirect
+	google.golang.org/appengine/v2 v2.0.5 // indirect
 	google.golang.org/genproto v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230822172742-b8732ec3820d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230822172742-b8732ec3820d // indirect
