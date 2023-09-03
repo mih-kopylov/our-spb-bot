@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- Print `ts` with `RFC3339` format
+
 ## [1.8.2] - 2023-07-03
 
 ### Fixed
