@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	cloud.google.com/go/firestore v1.13.0
-	firebase.google.com/go/v4 v4.12.0
+	firebase.google.com/go/v4 v4.12.1
 	github.com/caarlos0/env/v7 v7.1.0
 	github.com/docker/go-connections v0.4.0
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
@@ -18,7 +18,7 @@ require (
 	go.uber.org/fx v1.20.0
 	go.uber.org/zap v1.26.0
 	golang.org/x/exp v0.0.0-20230905200255-921286631fa9
-	google.golang.org/api v0.142.0
+	google.golang.org/api v0.143.0
 	google.golang.org/grpc v1.58.2
 	gopkg.in/yaml.v3 v3.0.1
 )
@@ -50,7 +50,6 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v4 v4.5.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/mock v1.6.0 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/pprof v0.0.0-20230912144702-c363fe2c2ed8 // indirect
@@ -76,7 +75,7 @@ require (
 	github.com/power-devops/perfstat v0.0.0-20221212215047-62379fc7944b // indirect
 	github.com/quic-go/qpack v0.4.0 // indirect
 	github.com/quic-go/qtls-go1-20 v0.3.4 // indirect
-	github.com/quic-go/quic-go v0.38.1 // indirect
+	github.com/quic-go/quic-go v0.39.0 // indirect
 	github.com/refraction-networking/utls v1.5.3 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.8 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
@@ -87,6 +86,7 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/dig v1.17.0 // indirect
+	go.uber.org/mock v0.3.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.13.0 // indirect
 	golang.org/x/mod v0.12.0 // indirect
