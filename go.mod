@@ -13,7 +13,7 @@ require (
 	github.com/lithammer/shortuuid/v4 v4.0.0
 	github.com/samber/lo v1.38.1
 	github.com/stretchr/testify v1.8.4
-	github.com/testcontainers/testcontainers-go v0.24.1
+	github.com/testcontainers/testcontainers-go v0.25.0
 	github.com/walkerus/go-wiremock v1.7.0
 	go.uber.org/fx v1.20.0
 	go.uber.org/zap v1.26.0
