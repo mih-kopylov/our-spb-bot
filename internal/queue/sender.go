@@ -101,7 +101,8 @@ func (s *MessageSender) sendNextMessage() {
 			zap.String("id", message.Id),
 			zap.Duration("period", s.inactivityDuration),
 		)
-		s.returnMessage(message, StatusFailed, "wait for user inactivity period")
+		message.RetryAfter = time.Now().Add(s.inactivityDuration)
+		s.returnMessage(message, StatusCreated, "wait for user inactivity period")
 		return
 	}
 
@@ -236,6 +237,9 @@ func (s *MessageSender) handleMessageSendingError(
 		message.RetryAfter = time.Now()
 		message.Longitude = s.shiftLongitudeMeters(message.Latitude, message.Longitude, 50)
 		s.returnMessageIncreaseTries(message, StatusCreated, "service expects coordinates outside a building")
+	} else if errorx.IsOfType(err, spb.ErrMatchesCoordsAndCategory) {
+		message.RetryAfter = time.Now().Add(time.Hour)
+		s.returnMessageIncreaseTries(message, StatusCreated, "service suspects the message is a duplicate")
 	} else if errorx.IsOfType(err, spb.ErrBadRequest) {
 		s.returnMessageIncreaseTries(message, StatusFailed, err.Error())
 	} else if errorx.IsOfType(err, spb.ErrTooManyRequests) {
