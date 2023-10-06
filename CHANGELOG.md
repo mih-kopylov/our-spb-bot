@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Wait for `INACTIVIRY_DURATION` after last user activity before sending messages
+
 ## [1.8.3] - 2023-09-03
 
 ### Fixed

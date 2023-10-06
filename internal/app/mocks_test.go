@@ -25,14 +25,16 @@ type Mocks struct {
 func NewMocks(t *testing.T) (*Mocks, error) {
 	ctx := context.Background()
 	testcontainers.Logger = &TestContainersLogger{logger: log.NewLogger()}
-	wiremockContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "wiremock/wiremock:latest-alpine",
-			ExposedPorts: []string{"8080/tcp"},
-			WaitingFor:   wait.NewHostPortStrategy("8080/tcp"),
+	wiremockContainer, err := testcontainers.GenericContainer(
+		ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        "wiremock/wiremock:latest-alpine",
+				ExposedPorts: []string{"8080/tcp"},
+				WaitingFor:   wait.NewHostPortStrategy("8080/tcp"),
+			},
+			Started: true,
 		},
-		Started: true,
-	})
+	)
 	if err != nil {
 		t.Errorf("failed to start wiremock container: %v", err.Error())
 	}
@@ -51,17 +53,19 @@ func NewMocks(t *testing.T) (*Mocks, error) {
 
 	wiremockClient := wiremock.NewClient(fmt.Sprintf("http://localhost:%v", wiremockPort.Port()))
 
-	firestoreContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
-		ContainerRequest: testcontainers.ContainerRequest{
-			Image:        "mtlynch/firestore-emulator-docker:latest",
-			ExposedPorts: []string{"8080/tcp"},
-			Env: map[string]string{
-				"FIRESTORE_PROJECT_ID": "ourspbbot",
+	firestoreContainer, err := testcontainers.GenericContainer(
+		ctx, testcontainers.GenericContainerRequest{
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image:        "mtlynch/firestore-emulator-docker:latest",
+				ExposedPorts: []string{"8080/tcp"},
+				Env: map[string]string{
+					"FIRESTORE_PROJECT_ID": "ourspbbot",
+				},
+				WaitingFor: wait.ForLog("Dev App Server is now running"),
 			},
-			WaitingFor: wait.ForLog("Dev App Server is now running"),
+			Started: true,
 		},
-		Started: true,
-	})
+	)
 	if err != nil {
 		defer teardown(t, wiremockContainer)
 		return nil, err
@@ -97,6 +101,7 @@ func (m *Mocks) BeforeAll(t *testing.T) {
 	t.Setenv("FIRESTORE_EMULATOR_HOST", fmt.Sprintf("localhost:%v", m.FirestorePort.Port()))
 	t.Setenv("FIREBASE_SERVICE_ACCOUNT", base64.StdEncoding.EncodeToString([]byte("FIREBASE_SERVICE_ACCOUNT")))
 	t.Setenv("SENDER_SLEEP_DURATION", "1s")
+	t.Setenv("INACTIVIRY_DURATION", "1s")
 }
 
 func teardown(t *testing.T, containers ...testcontainers.Container) {
@@ -124,45 +129,61 @@ func (m *Mocks) AfterEach(t *testing.T) {
 }
 
 func (m *Mocks) SetupGetMeMock(t *testing.T) {
-	err := m.WiremockClient.StubFor(wiremock.Post(wiremock.URLPathMatching("/bot.+/getMe")).
-		WillReturnResponse(wiremock.NewResponse().
-			WithJSONBody(map[string]any{
-				"ok": true,
-				"result": map[string]any{
-					"id":     1,
-					"is_bot": true,
-				},
-			}).
-			WithHeaders(map[string]string{"Content-Type": "application/json"}).
-			WithStatus(200),
-		))
+	err := m.WiremockClient.StubFor(
+		wiremock.Post(wiremock.URLPathMatching("/bot.+/getMe")).
+			WillReturnResponse(
+				wiremock.NewResponse().
+					WithJSONBody(
+						map[string]any{
+							"ok": true,
+							"result": map[string]any{
+								"id":     1,
+								"is_bot": true,
+							},
+						},
+					).
+					WithHeaders(map[string]string{"Content-Type": "application/json"}).
+					WithStatus(200),
+			),
+	)
 	if err != nil {
 		t.Error(err)
 	}
 }
 
 func (m *Mocks) SetupSetMyCommandsMock(t *testing.T) {
-	err := m.WiremockClient.StubFor(wiremock.Post(wiremock.URLPathMatching("/bot.+/setMyCommands")).
-		WillReturnResponse(wiremock.NewResponse().
-			WithJSONBody(map[string]any{
-				"ok": true,
-			}).
-			WithHeaders(map[string]string{"Content-Type": "application/json"}).
-			WithStatus(200),
-		))
+	err := m.WiremockClient.StubFor(
+		wiremock.Post(wiremock.URLPathMatching("/bot.+/setMyCommands")).
+			WillReturnResponse(
+				wiremock.NewResponse().
+					WithJSONBody(
+						map[string]any{
+							"ok": true,
+						},
+					).
+					WithHeaders(map[string]string{"Content-Type": "application/json"}).
+					WithStatus(200),
+			),
+	)
 	if err != nil {
 		t.Error(err)
 	}
 }
 func (m *Mocks) SetupGetUpdatesMock(t *testing.T) {
-	err := m.WiremockClient.StubFor(wiremock.Post(wiremock.URLPathMatching("/bot.+/getUpdates")).
-		WillReturnResponse(wiremock.NewResponse().
-			WithJSONBody(map[string]any{
-				"ok":     true,
-				"result": []any{},
-			}).
-			WithHeaders(map[string]string{"Content-Type": "application/json"}).
-			WithStatus(200).WithFixedDelay(time.Second)))
+	err := m.WiremockClient.StubFor(
+		wiremock.Post(wiremock.URLPathMatching("/bot.+/getUpdates")).
+			WillReturnResponse(
+				wiremock.NewResponse().
+					WithJSONBody(
+						map[string]any{
+							"ok":     true,
+							"result": []any{},
+						},
+					).
+					WithHeaders(map[string]string{"Content-Type": "application/json"}).
+					WithStatus(200).WithFixedDelay(time.Second),
+			),
+	)
 	if err != nil {
 		t.Error(err)
 	}
