@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Retry message sending when it matches coords and category with another one
+
+### Fixed
+
+- Message status when it waits for inactivity period
+
 ## [1.9.0] - 2023-10-06
 
 ### Changed

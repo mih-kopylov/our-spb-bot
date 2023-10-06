@@ -51,7 +51,9 @@ func (r *ReqClient) GetNearestBuildings(latitude float64, longitude float64) (*N
 		return nil, errorx.EnhanceStackTrace(err, "failed to get reasons")
 	}
 	if response.IsErrorState() || !response.IsSuccessState() {
-		return nil, ErrBadRequest.New("failed to get nearest buildings: status=%v, response=%v", response.StatusCode, errorResponse.String())
+		return nil, ErrBadRequest.New(
+			"failed to get nearest buildings: status=%v, response=%v", response.StatusCode, errorResponse.String(),
+		)
 	}
 
 	return &result, nil
@@ -71,13 +73,17 @@ func (r *ReqClient) GetReasons() ([]CityResponse, error) {
 	}
 
 	if response.IsErrorState() || !response.IsSuccessState() {
-		return nil, ErrBadRequest.New("failed to get reasons: status=%v, response=%v", response.StatusCode, errorResponse.String())
+		return nil, ErrBadRequest.New(
+			"failed to get reasons: status=%v, response=%v", response.StatusCode, errorResponse.String(),
+		)
 	}
 
 	return result, nil
 }
 
-func (r *ReqClient) Send(token string, fields map[string]string, files map[string][]byte) (*SentMessageResponse, error) {
+func (r *ReqClient) Send(token string, fields map[string]string, files map[string][]byte) (
+	*SentMessageResponse, error,
+) {
 	var result SentMessageResponse
 	var errorResponse ErrorResponse
 	request := r.client.R()
@@ -103,16 +109,25 @@ func (r *ReqClient) Send(token string, fields map[string]string, files map[strin
 		if strings.Contains(errorResponse.String(), "Вы отправили 10 сообщений за сутки.") {
 			return nil, ErrTooManyRequests.Wrap(err, "too many requests")
 		}
+		if strings.Contains(
+			errorResponse.String(), "Ваше сообщение не зарегистрировано по причине совпадения проблемы и адреса",
+		) {
+			return nil, ErrTooManyRequests.Wrap(err, "too many requests")
+		}
 		if response.StatusCode == http.StatusUnauthorized {
 			return nil, ErrUnauthorized.Wrap(err, "token expired")
 		}
-		return nil, ErrBadRequest.New("failed to send a message: status=%v, response=%v", response.StatusCode, errorResponse.String())
+		return nil, ErrBadRequest.New(
+			"failed to send a message: status=%v, response=%v", response.StatusCode, errorResponse.String(),
+		)
 	}
 
 	return &result, nil
 }
 
-func (r *ReqClient) CreateSendProblemRequest(reasonId int64, body string, latitude float64, longitude float64) (map[string]string, error) {
+func (r *ReqClient) CreateSendProblemRequest(
+	reasonId int64, body string, latitude float64, longitude float64,
+) (map[string]string, error) {
 	reason, err := r.getReason(reasonId)
 	if err != nil {
 		return nil, ErrBadRequest.Wrap(err, "failed to get reason")
@@ -176,7 +191,9 @@ func (r *ReqClient) Login(login string, password string) (*TokenResponse, error)
 	}
 
 	if response.IsErrorState() || !response.IsSuccessState() {
-		return nil, ErrUnauthorized.New("failed to login: status=%v, response=%v", response.StatusCode, responseError.String())
+		return nil, ErrUnauthorized.New(
+			"failed to login: status=%v, response=%v", response.StatusCode, responseError.String(),
+		)
 	}
 
 	return &result, nil
@@ -184,14 +201,20 @@ func (r *ReqClient) Login(login string, password string) (*TokenResponse, error)
 
 func (r *ReqClient) configureRetries(request *req.Request) {
 	request.SetRetryCount(5)
-	request.AddRetryCondition(func(resp *req.Response, err error) bool {
-		return err != nil || resp.StatusCode >= 500
-	})
+	request.AddRetryCondition(
+		func(resp *req.Response, err error) bool {
+			return err != nil || resp.StatusCode >= 500
+		},
+	)
 	request.SetRetryFixedInterval(5 * time.Second)
-	request.AddRetryHook(func(resp *req.Response, err error) {
-		r.logger.Info("retry request",
-			zap.String("url", resp.Request.RawURL))
-	})
+	request.AddRetryHook(
+		func(resp *req.Response, err error) {
+			r.logger.Info(
+				"retry request",
+				zap.String("url", resp.Request.RawURL),
+			)
+		},
+	)
 }
 
 func (r *ReqClient) printDebugDump(response *req.Response) {

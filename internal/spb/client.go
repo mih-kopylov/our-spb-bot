@@ -9,7 +9,9 @@ type Client interface {
 	GetNearestBuildings(latitude float64, longitude float64) (*NearestBuildingResponse, error)
 	GetReasons() ([]CityResponse, error)
 	Send(token string, fields map[string]string, files map[string][]byte) (*SentMessageResponse, error)
-	CreateSendProblemRequest(reasonId int64, body string, latitude float64, longitude float64) (map[string]string, error)
+	CreateSendProblemRequest(reasonId int64, body string, latitude float64, longitude float64) (
+		map[string]string, error,
+	)
 }
 
 var (
@@ -19,4 +21,5 @@ var (
 	ErrFailedRequest              = Errors.NewType("FailedRequest")
 	ErrUnauthorized               = Errors.NewType("Unauthorized")
 	ErrExpectingNotBuildingCoords = Errors.NewType("ExpectingNotBuildingCoords")
+	ErrMatchesCoordsAndCategory   = Errors.NewType("MatchesCoordsAndCategory")
 )
