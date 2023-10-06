@@ -16,14 +16,15 @@ import (
 )
 
 type MessageSender struct {
-	logger        *zap.Logger
-	states        state.States
-	queue         MessageQueue
-	spbClient     spb.Client
-	api           *tgbotapi.BotAPI
-	service       *service.Service
-	enabled       bool
-	sleepDuration time.Duration
+	logger             *zap.Logger
+	states             state.States
+	queue              MessageQueue
+	spbClient          spb.Client
+	api                *tgbotapi.BotAPI
+	service            *service.Service
+	enabled            bool
+	sleepDuration      time.Duration
+	inactivityDuration time.Duration
 }
 
 var (
@@ -33,17 +34,20 @@ var (
 	ErrAllAccountsRateLimited = Errors.NewType("AllAccountsRateLimited")
 )
 
-func NewMessageSender(logger *zap.Logger, conf *config.Config, states state.States, queue MessageQueue, spbClient spb.Client,
-	api *tgbotapi.BotAPI, service *service.Service) *MessageSender {
+func NewMessageSender(
+	logger *zap.Logger, conf *config.Config, states state.States, queue MessageQueue, spbClient spb.Client,
+	api *tgbotapi.BotAPI, service *service.Service,
+) *MessageSender {
 	return &MessageSender{
-		logger:        logger,
-		states:        states,
-		queue:         queue,
-		spbClient:     spbClient,
-		api:           api,
-		service:       service,
-		enabled:       conf.SenderEnabled,
-		sleepDuration: conf.SenderSleepDuration,
+		logger:             logger,
+		states:             states,
+		queue:              queue,
+		spbClient:          spbClient,
+		api:                api,
+		service:            service,
+		enabled:            conf.SenderEnabled,
+		sleepDuration:      conf.SenderSleepDuration,
+		inactivityDuration: conf.InactivityDuration,
 	}
 }
 
@@ -65,9 +69,11 @@ func (s *MessageSender) sendNextMessage() {
 	s.logger.Debug("polling messages")
 	message, err := s.queue.Poll()
 	if err != nil {
-		s.logger.Error("failed to poll next message",
+		s.logger.Error(
+			"failed to poll next message",
 			zap.Duration("sleep", s.sleepDuration),
-			zap.Error(err))
+			zap.Error(err),
+		)
 		time.Sleep(s.sleepDuration)
 		return
 	}
@@ -81,99 +87,146 @@ func (s *MessageSender) sendNextMessage() {
 
 	userState, err := s.states.GetState(message.UserId)
 	if err != nil {
-		s.logger.Error("failed to get user state",
-			zap.Error(err))
+		s.logger.Error(
+			"failed to get user state",
+			zap.Error(err),
+		)
 		s.returnMessage(message, StatusFailed, "failed to get user state")
+		return
+	}
+
+	if userState.LastAccessAt.Add(s.inactivityDuration).After(time.Now()) {
+		s.logger.Info(
+			"wait for user inactivity period",
+			zap.String("id", message.Id),
+			zap.Duration("period", s.inactivityDuration),
+		)
+		s.returnMessage(message, StatusFailed, "wait for user inactivity period")
 		return
 	}
 
 	account, appropriateAccountsCount, err := s.chooseAccount(userState, message)
 	if err != nil {
 		if errorx.IsOfType(err, ErrNoAccounts) || errorx.IsOfType(err, ErrAllAccountsDisabled) {
-			s.logger.Error("failed to choose an account",
-				zap.Error(err))
+			s.logger.Error(
+				"failed to choose an account",
+				zap.Error(err),
+			)
 			s.returnMessage(message, StatusFailed, "no authorized accounts found")
 			return
 		}
 		if errorx.IsOfType(err, ErrAllAccountsRateLimited) {
-			s.logger.Info("user is rate limited",
-				zap.String("id", message.Id))
+			s.logger.Info(
+				"user is rate limited",
+				zap.String("id", message.Id),
+			)
 
-			enabledAccounts := lo.Filter(userState.Accounts, func(item state.Account, _ int) bool {
-				return item.State == state.AccountStateEnabled
-			})
-			message.RetryAfter = lo.MinBy(enabledAccounts, func(a state.Account, b state.Account) bool {
-				return a.RateLimitedUntil.Before(b.RateLimitedUntil)
-			}).RateLimitedUntil
+			enabledAccounts := lo.Filter(
+				userState.Accounts, func(item state.Account, _ int) bool {
+					return item.State == state.AccountStateEnabled
+				},
+			)
+			message.RetryAfter = lo.MinBy(
+				enabledAccounts, func(a state.Account, b state.Account) bool {
+					return a.RateLimitedUntil.Before(b.RateLimitedUntil)
+				},
+			).RateLimitedUntil
 			s.returnMessage(message, StatusCreated, "user is rate limited")
 			return
 		}
 	}
 
-	s.logger.Debug("creating a request",
-		zap.String("id", message.Id))
-	request, err := s.spbClient.CreateSendProblemRequest(message.CategoryId, message.Text, message.Latitude, message.Longitude)
+	s.logger.Debug(
+		"creating a request",
+		zap.String("id", message.Id),
+	)
+	request, err := s.spbClient.CreateSendProblemRequest(
+		message.CategoryId, message.Text, message.Latitude, message.Longitude,
+	)
 	if err != nil {
-		s.logger.Error("failed to create a request",
-			zap.Error(err))
+		s.logger.Error(
+			"failed to create a request",
+			zap.Error(err),
+		)
 		s.returnMessage(message, StatusFailed, "failed to create a request: "+err.Error())
 		return
 	}
 
-	s.logger.Debug("getting files",
-		zap.String("id", message.Id))
+	s.logger.Debug(
+		"getting files",
+		zap.String("id", message.Id),
+	)
 	files, err := s.getFiles(message)
 	if err != nil {
-		s.logger.Error("failed to get message files",
-			zap.Error(err))
+		s.logger.Error(
+			"failed to get message files",
+			zap.Error(err),
+		)
 		s.returnMessage(message, StatusFailed, "failed to get messages files "+err.Error())
 		return
 	}
 
-	s.logger.Debug("sending message",
-		zap.String("id", message.Id))
+	s.logger.Debug(
+		"sending message",
+		zap.String("id", message.Id),
+	)
 	sentMessageResponse, err := s.spbClient.Send(account.Token, request, files)
 	if err != nil {
-		s.logger.Warn("failed to send message",
+		s.logger.Warn(
+			"failed to send message",
 			zap.String("id", message.Id),
-			zap.Error(err))
+			zap.Error(err),
+		)
 		s.handleMessageSendingError(err, userState, account, appropriateAccountsCount, message)
 		return
 	}
 
-	err = s.service.SendMessage(&tgbotapi.Chat{ID: message.UserId}, fmt.Sprintf(`Обращение отправлено.
+	err = s.service.SendMessage(
+		&tgbotapi.Chat{ID: message.UserId}, fmt.Sprintf(
+			`Обращение отправлено.
 Пользователь: %v
 Id: %v
 Ссылка: https://gorod.gov.spb.ru/problems/%v/`,
-		account.Login,
-		message.Id,
-		sentMessageResponse.Id,
-	))
+			account.Login,
+			message.Id,
+			sentMessageResponse.Id,
+		),
+	)
 	if err != nil {
-		s.logger.Warn("failed to send reply",
+		s.logger.Warn(
+			"failed to send reply",
 			zap.String("id", message.Id),
-			zap.Error(err))
+			zap.Error(err),
+		)
 		return
 	}
 
 	userState.SentMessagesCount++
 	err = s.states.SetState(userState)
 	if err != nil {
-		s.logger.Error("failed to set user state",
-			zap.Error(err))
+		s.logger.Error(
+			"failed to set user state",
+			zap.Error(err),
+		)
 	}
 
-	s.logger.Debug("message sent",
-		zap.String("id", message.Id))
+	s.logger.Debug(
+		"message sent",
+		zap.String("id", message.Id),
+	)
 }
 
-func (s *MessageSender) handleMessageSendingError(err error, userState *state.UserState, account *state.Account, appropriateAccountsCount int, message *Message) {
+func (s *MessageSender) handleMessageSendingError(
+	err error, userState *state.UserState, account *state.Account, appropriateAccountsCount int, message *Message,
+) {
 	if errorx.IsOfType(err, spb.ErrUnauthorized) {
 		account.Token = ""
 		err = s.states.SetState(userState)
 		if err != nil {
-			s.logger.Error("failed to set user state",
-				zap.Error(err))
+			s.logger.Error(
+				"failed to set user state",
+				zap.Error(err),
+			)
 			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state: "+err.Error())
 		} else {
 			message.RetryAfter = time.Now()
@@ -187,14 +240,16 @@ func (s *MessageSender) handleMessageSendingError(err error, userState *state.Us
 		s.returnMessageIncreaseTries(message, StatusFailed, err.Error())
 	} else if errorx.IsOfType(err, spb.ErrTooManyRequests) {
 		year, month, day := time.Now().In(util.SpbLocation).AddDate(0, 0, 1).Date()
-		hour, min, _ := account.RateLimitNextDayTime.In(util.SpbLocation).Clock()
-		nextTryTime := time.Date(year, month, day, hour, min, 0, 0, util.SpbLocation)
+		hour, minute, _ := account.RateLimitNextDayTime.In(util.SpbLocation).Clock()
+		nextTryTime := time.Date(year, month, day, hour, minute, 0, 0, util.SpbLocation)
 
 		account.RateLimitedUntil = nextTryTime
 		err = s.states.SetState(userState)
 		if err != nil {
-			s.logger.Error("failed to set user state",
-				zap.Error(err))
+			s.logger.Error(
+				"failed to set user state",
+				zap.Error(err),
+			)
 			s.returnMessageIncreaseTries(message, StatusFailed, "failed to set user state: "+err.Error())
 		} else {
 			if appropriateAccountsCount == 1 {
@@ -219,9 +274,11 @@ func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Mess
 		return errorx.IllegalState.New("user not authorized")
 	}
 
-	s.logger.Info("refreshing token",
+	s.logger.Info(
+		"refreshing token",
 		zap.String("id", message.Id),
-		zap.String("login", account.Login))
+		zap.String("login", account.Login),
+	)
 	tokenResponse, err := s.spbClient.Login(account.Login, account.Password)
 	if err != nil {
 		account.Login = ""
@@ -235,8 +292,10 @@ func (s *MessageSender) tryReauthorize(userState *state.UserState, message *Mess
 		return errorx.EnhanceStackTrace(err, "failed to reauthorize")
 	}
 
-	s.logger.Info("new token obtained",
-		zap.String("id", message.Id))
+	s.logger.Info(
+		"new token obtained",
+		zap.String("id", message.Id),
+	)
 	account.Token = tokenResponse.AccessToken
 	err = s.states.SetState(userState)
 	if err != nil {
@@ -262,10 +321,12 @@ func (s *MessageSender) returnMessage(message *Message, status Status, descripti
 	if err != nil {
 		s.logger.Error("failed to return a failed message back to queue")
 	} else {
-		s.logger.Info("message returned to the queue",
+		s.logger.Info(
+			"message returned to the queue",
 			zap.String("id", message.Id),
 			zap.Any("status", message.Status),
-			zap.String("failDescription", message.FailDescription))
+			zap.String("failDescription", message.FailDescription),
+		)
 	}
 }
 
@@ -295,9 +356,13 @@ func (s *MessageSender) chooseAccount(userState *state.UserState, message *Messa
 		return nil, 0, ErrNoAccounts.New("no accounts found")
 	}
 
-	if len(lo.Filter(userState.Accounts, func(item state.Account, index int) bool {
-		return item.State == state.AccountStateEnabled
-	})) == 0 {
+	if len(
+		lo.Filter(
+			userState.Accounts, func(item state.Account, index int) bool {
+				return item.State == state.AccountStateEnabled
+			},
+		),
+	) == 0 {
 		return nil, 0, ErrAllAccountsDisabled.New("all accounts disabled")
 	}
 
@@ -315,9 +380,11 @@ func (s *MessageSender) chooseAccount(userState *state.UserState, message *Messa
 		if account.Token == "" {
 			err := s.tryReauthorize(userState, message, &userState.Accounts[i])
 			if err != nil {
-				s.logger.Warn("failed to authorize with account",
+				s.logger.Warn(
+					"failed to authorize with account",
 					zap.String("id", message.Id),
-					zap.String("login", account.Login))
+					zap.String("login", account.Login),
+				)
 				continue
 			}
 		}

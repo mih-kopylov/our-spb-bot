@@ -15,6 +15,7 @@ type Config struct {
 	FirebaseServiceAccount string        `env:"FIREBASE_SERVICE_ACCOUNT,required"`
 	SenderEnabled          bool          `env:"SENDER_ENABLED"`
 	SenderSleepDuration    time.Duration `env:"SENDER_SLEEP_DURATION,required"`
+	InactivityDuration     time.Duration `env:"INACTIVIRY_DURATION,required"`
 }
 
 func NewConfig() (*Config, error) {
