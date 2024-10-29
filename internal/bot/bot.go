@@ -1,13 +1,15 @@
 package bot
 
 import (
+	"maps"
+	"slices"
+	"strings"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
-	"golang.org/x/exp/maps"
-	"strings"
 )
 
 var (
@@ -24,20 +26,29 @@ type TgBot struct {
 	forms     map[string]Form
 }
 
-func NewTgBot(logger *zap.Logger, api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback, forms []Form) *TgBot {
+func NewTgBot(
+	logger *zap.Logger, api *tgbotapi.BotAPI, states state.States, commands []Command, callbacks []Callback,
+	forms []Form,
+) *TgBot {
 	return &TgBot{
 		logger: logger,
 		api:    api,
 		states: states,
-		commands: lo.SliceToMap(commands, func(item Command) (string, Command) {
-			return item.Name(), item
-		}),
-		callbacks: lo.SliceToMap(callbacks, func(item Callback) (string, Callback) {
-			return item.Name(), item
-		}),
-		forms: lo.SliceToMap(forms, func(item Form) (string, Form) {
-			return item.Name(), item
-		}),
+		commands: lo.SliceToMap(
+			commands, func(item Command) (string, Command) {
+				return item.Name(), item
+			},
+		),
+		callbacks: lo.SliceToMap(
+			callbacks, func(item Callback) (string, Callback) {
+				return item.Name(), item
+			},
+		),
+		forms: lo.SliceToMap(
+			forms, func(item Form) (string, Form) {
+				return item.Name(), item
+			},
+		),
 	}
 }
 
@@ -63,9 +74,11 @@ func (b *TgBot) processUpdates() {
 		err := b.callHandler(update)
 		if err != nil {
 			err = errorx.EnhanceStackTrace(err, "failed to handle update")
-			b.logger.Error("",
+			b.logger.Error(
+				"",
 				zap.Int64("chat", update.FromChat().ID),
-				zap.Error(err))
+				zap.Error(err),
+			)
 		}
 	}
 }
@@ -84,7 +97,7 @@ func (b *TgBot) callHandler(update tgbotapi.Update) error {
 func (b *TgBot) registerCommands() error {
 	setMyCommandsConfig := tgbotapi.NewSetMyCommands(
 		lo.Map(
-			maps.Values(b.commands), func(command Command, _ int) tgbotapi.BotCommand {
+			slices.Collect(maps.Values(b.commands)), func(command Command, _ int) tgbotapi.BotCommand {
 				return tgbotapi.BotCommand{
 					Command:     command.Name(),
 					Description: command.Description(),
