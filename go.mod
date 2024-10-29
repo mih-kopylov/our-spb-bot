@@ -1,6 +1,6 @@
 module github.com/mih-kopylov/our-spb-bot
 
-go 1.20
+go 1.23
 
 require (
 	cloud.google.com/go/firestore v1.15.0
@@ -17,7 +17,6 @@ require (
 	github.com/walkerus/go-wiremock v1.7.0
 	go.uber.org/fx v1.21.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0
 	google.golang.org/api v0.172.0
 	google.golang.org/grpc v1.63.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -95,6 +94,7 @@ require (
 	go.uber.org/mock v0.4.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/exp v0.0.0-20240404231335-c0f41cb1a7a0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
 	golang.org/x/net v0.24.0 // indirect
 	golang.org/x/oauth2 v0.19.0 // indirect
