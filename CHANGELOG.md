@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.12.0] - 2024-11-16
+
 ### Changed
 
-- Stop sending a message after an error without files
+- Remove keyboard after sending a photo
 
 ## [1.11.0] - 2024-11-16
 
