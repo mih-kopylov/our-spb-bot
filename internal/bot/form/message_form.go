@@ -87,11 +87,13 @@ func (f *MessageForm) handleLocation(message *tgbotapi.Message, userState *state
 		_, err := f.service.SendMessageCustom(
 			message.Chat, "Нужно прикрепить хотя бы одно фото", func(reply *tgbotapi.MessageConfig) {
 				reply.ReplyToMessageID = message.MessageID
+				reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
 			},
 		)
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 
 	text := userState.GetStringFormField(state.FormFieldMessageText)
