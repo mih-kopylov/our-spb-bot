@@ -92,6 +92,7 @@ func (f *MessageForm) handleLocation(message *tgbotapi.Message, userState *state
 		if err != nil {
 			return err
 		}
+		return nil
 	}
 
 	text := userState.GetStringFormField(state.FormFieldMessageText)
