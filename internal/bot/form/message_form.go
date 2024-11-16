@@ -2,6 +2,10 @@ package form
 
 import (
 	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/lithammer/shortuuid/v4"
@@ -12,9 +16,6 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/queue"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/samber/lo"
-	"strconv"
-	"strings"
-	"time"
 )
 
 const (
@@ -34,9 +35,11 @@ func (f *MessageForm) Name() string {
 	return MessageFormName
 }
 
-func NewMessageForm(states state.States, service *service.Service,
+func NewMessageForm(
+	states state.States, service *service.Service,
 	messageQueue queue.MessageQueue, categoryService *category.Service,
-	deleteMessageCallback *callback.DeleteMessageCallback, deletePhotoCallback *callback.DeletePhotoCallback) bot.Form {
+	deleteMessageCallback *callback.DeleteMessageCallback, deletePhotoCallback *callback.DeletePhotoCallback,
+) bot.Form {
 	return &MessageForm{
 		states:                states,
 		service:               service,
@@ -79,6 +82,18 @@ func (f *MessageForm) handleLocation(message *tgbotapi.Message, userState *state
 		return errorx.AssertionFailed.New("category is expected to be selected at this phase")
 	}
 
+	files := userState.GetStringSlice(state.FormFieldFiles)
+	if len(files) == 0 {
+		_, err := f.service.SendMessageCustom(
+			message.Chat, "Нужно прикрепить хотя бы одно фото", func(reply *tgbotapi.MessageConfig) {
+				reply.ReplyToMessageID = message.MessageID
+			},
+		)
+		if err != nil {
+			return err
+		}
+	}
+
 	text := userState.GetStringFormField(state.FormFieldMessageText)
 	createdAt := time.Now()
 	messageId := createdAt.Format("06-01-02") + "_" + shortuuid.New()
@@ -102,7 +117,8 @@ func (f *MessageForm) handleLocation(message *tgbotapi.Message, userState *state
 		return errorx.EnhanceStackTrace(err, "failed to add message to queue")
 	}
 
-	replyText := fmt.Sprintf(`
+	replyText := fmt.Sprintf(
+		`
 Сообщение добавлено в очередь и будет отправлено при первой возможности.
 
 Пользователь: @%v
@@ -134,9 +150,11 @@ func (f *MessageForm) handleLocation(message *tgbotapi.Message, userState *state
 /status - статус обращений
 `
 
-	_, err = f.service.SendMessageCustom(message.Chat, nextCommandsMessageText, func(reply *tgbotapi.MessageConfig) {
-		reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
-	})
+	_, err = f.service.SendMessageCustom(
+		message.Chat, nextCommandsMessageText, func(reply *tgbotapi.MessageConfig) {
+			reply.ReplyMarkup = tgbotapi.NewRemoveKeyboard(false)
+		},
+	)
 	if err != nil {
 		return err
 	}
@@ -157,9 +175,11 @@ func (f *MessageForm) handlePhoto(message *tgbotapi.Message, userState *state.Us
 		replyText := `Портал допускает максимум 5 файлов в обращении.
 Это фото не будет приложено. 
 Для того, чтобы использовать именно это фото, можно удалить одно из предыдущих.`
-		_, err := f.service.SendMessageCustom(message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
-			reply.ReplyToMessageID = message.MessageID
-		})
+		_, err := f.service.SendMessageCustom(
+			message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
+				reply.ReplyToMessageID = message.MessageID
+			},
+		)
 		return err
 	}
 
@@ -176,7 +196,8 @@ func (f *MessageForm) handlePhoto(message *tgbotapi.Message, userState *state.Us
 		return errorx.EnhanceStackTrace(err, "failed to set user state")
 	}
 
-	replyText := fmt.Sprintf(`Фотография добавлена.
+	replyText := fmt.Sprintf(
+		`Фотография добавлена.
 
 Id: %v
 Размер: %vx%v
@@ -184,11 +205,14 @@ Id: %v
 		maxPhotoSize.FileID,
 		maxPhotoSize.Width,
 		maxPhotoSize.Height,
-		maxPhotoSize.FileSize)
-	_, err = f.service.SendMessageCustom(message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
-		reply.ReplyToMessageID = message.MessageID
-		reply.ReplyMarkup = f.deletePhotoCallback.CreateMarkup(message.MessageID)
-	})
+		maxPhotoSize.FileSize,
+	)
+	_, err = f.service.SendMessageCustom(
+		message.Chat, replyText, func(reply *tgbotapi.MessageConfig) {
+			reply.ReplyToMessageID = message.MessageID
+			reply.ReplyMarkup = f.deletePhotoCallback.CreateMarkup(message.MessageID)
+		},
+	)
 	if err != nil {
 		return err
 	}
