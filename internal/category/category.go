@@ -4,8 +4,9 @@ import (
 	"crypto/md5"
 	_ "embed"
 	"encoding/base64"
-	"github.com/joomcode/errorx"
 	"strings"
+
+	"github.com/joomcode/errorx"
 )
 
 //go:embed defaultCategories.yaml

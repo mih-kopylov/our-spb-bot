@@ -1,11 +1,12 @@
 package migration
 
 import (
+	"time"
+
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"github.com/mih-kopylov/our-spb-bot/internal/util"
 	"go.uber.org/zap"
-	"time"
 )
 
 type AccountTimeMigration struct {

@@ -1,9 +1,10 @@
 package category
 
 import (
+	"strconv"
+
 	"github.com/joomcode/errorx"
 	"gopkg.in/yaml.v3"
-	"strconv"
 )
 
 type Service struct {

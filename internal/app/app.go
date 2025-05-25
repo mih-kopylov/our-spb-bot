@@ -142,7 +142,7 @@ func createApp(version string, commit string) fx.Option {
 				migration.NewAccountTimeMigration, fx.ResultTags(`group:"migrations"`),
 			),
 		),
-		
+
 		fx.Invoke(func(migrations *migration.Migrations) error {
 			return migrations.RunAll()
 		}),

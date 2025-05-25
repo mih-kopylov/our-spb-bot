@@ -2,6 +2,8 @@ package form
 
 import (
 	"fmt"
+	"time"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
@@ -10,7 +12,6 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/util"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
-	"time"
 )
 
 const (

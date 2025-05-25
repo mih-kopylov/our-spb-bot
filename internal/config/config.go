@@ -1,10 +1,11 @@
 package config
 
 import (
+	"time"
+
 	"github.com/caarlos0/env/v7"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
-	"time"
 )
 
 type Config struct {

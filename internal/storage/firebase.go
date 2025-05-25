@@ -1,9 +1,10 @@
 package storage
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
 	"encoding/base64"
+
+	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go/v4"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"google.golang.org/api/option"
