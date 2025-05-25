@@ -1,11 +1,12 @@
 package service
 
 import (
+	"net/http"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
-	"net/http"
 )
 
 type Service struct {

@@ -1,11 +1,12 @@
 package state
 
 import (
+	"reflect"
+	"time"
+
 	"github.com/joomcode/errorx"
 	"github.com/samber/lo"
 	"go.uber.org/zap"
-	"reflect"
-	"time"
 )
 
 type States interface {

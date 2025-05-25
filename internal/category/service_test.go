@@ -1,9 +1,10 @@
 package category
 
 import (
-	"github.com/stretchr/testify/assert"
 	"os"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateUserCategoryTree(t *testing.T) {
