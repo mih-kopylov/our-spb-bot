@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- Configure OurSpb client timeout with environment variable
+
 ## [1.12.0] - 2024-11-16
 
 ### Changed

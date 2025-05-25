@@ -99,6 +99,7 @@ func (m *Mocks) BeforeAll(t *testing.T) {
 	t.Setenv("OURSPB_API_ENDPOINT", fmt.Sprintf("http://localhost:%v", m.WiremockPort.Port()))
 	t.Setenv("OURSPB_CLIENT_ID", "OURSPB_CLIENT_ID")
 	t.Setenv("OURSPB_SECRET", "OURSPB_SECRET")
+	t.Setenv("OURSPB_CLIENT_TIMEOUT", "1s")
 	t.Setenv("FIRESTORE_EMULATOR_HOST", fmt.Sprintf("localhost:%v", m.FirestorePort.Port()))
 	t.Setenv("FIREBASE_SERVICE_ACCOUNT", base64.StdEncoding.EncodeToString([]byte("FIREBASE_SERVICE_ACCOUNT")))
 	t.Setenv("SENDER_SLEEP_DURATION", "1s")

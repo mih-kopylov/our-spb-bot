@@ -25,7 +25,7 @@ func NewReqClient(logger *zap.Logger, conf *config.Config) *ReqClient {
 		// this is to pretend to be an official client
 		SetUserAgent("okhttp/2.5.0").
 		EnableDumpEachRequest().
-		SetTimeout(5 * time.Second)
+		SetTimeout(conf.OurSpbClientTimeout)
 	client.GetTransport()
 
 	return &ReqClient{
