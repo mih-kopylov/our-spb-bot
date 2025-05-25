@@ -2,13 +2,14 @@ package spb
 
 import (
 	"fmt"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/imroc/req/v3"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/config"
 	"go.uber.org/zap"
-	"net/http"
-	"strings"
-	"time"
 )
 
 type ReqClient struct {

@@ -3,6 +3,9 @@ package command
 import (
 	_ "embed"
 	"fmt"
+	"strings"
+	"text/template"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
@@ -10,8 +13,6 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/info"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
-	"strings"
-	"text/template"
 )
 
 //go:embed start.html

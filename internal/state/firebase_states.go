@@ -1,16 +1,17 @@
 package state
 
 import (
-	"cloud.google.com/go/firestore"
 	"context"
+	"strconv"
+	"time"
+
+	"cloud.google.com/go/firestore"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"gopkg.in/yaml.v3"
-	"strconv"
-	"time"
 )
 
 const (

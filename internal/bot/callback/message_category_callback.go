@@ -2,6 +2,8 @@ package callback
 
 import (
 	"fmt"
+	"strings"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/joomcode/errorx"
 	"github.com/mih-kopylov/our-spb-bot/internal/bot"
@@ -9,7 +11,6 @@ import (
 	"github.com/mih-kopylov/our-spb-bot/internal/category"
 	"github.com/mih-kopylov/our-spb-bot/internal/state"
 	"go.uber.org/zap"
-	"strings"
 )
 
 const (

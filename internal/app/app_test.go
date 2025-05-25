@@ -1,17 +1,18 @@
 package app
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/testcontainers/testcontainers-go"
-	"go.uber.org/fx"
-	"go.uber.org/fx/fxtest"
-	"go.uber.org/zap"
 	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/testcontainers/testcontainers-go"
+	"go.uber.org/fx"
+	"go.uber.org/fx/fxtest"
+	"go.uber.org/zap"
 )
 
 func TestRunApplication(t *testing.T) {
