@@ -4,14 +4,16 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"testing"
+	"time"
+
 	"github.com/docker/go-connections/nat"
 	"github.com/mih-kopylov/our-spb-bot/internal/log"
 	"github.com/testcontainers/testcontainers-go"
+	testcontainersLog "github.com/testcontainers/testcontainers-go/log"
 	"github.com/testcontainers/testcontainers-go/wait"
 	"github.com/walkerus/go-wiremock"
 	"go.uber.org/zap"
-	"testing"
-	"time"
 )
 
 type Mocks struct {
@@ -24,7 +26,7 @@ type Mocks struct {
 
 func NewMocks(t *testing.T) (*Mocks, error) {
 	ctx := context.Background()
-	testcontainers.Logger = &TestContainersLogger{logger: log.NewLogger()}
+	testcontainersLog.SetDefault(&TestContainersLogger{logger: log.NewLogger()})
 	wiremockContainer, err := testcontainers.GenericContainer(
 		ctx, testcontainers.GenericContainerRequest{
 			ContainerRequest: testcontainers.ContainerRequest{
@@ -38,7 +40,6 @@ func NewMocks(t *testing.T) (*Mocks, error) {
 	if err != nil {
 		t.Errorf("failed to start wiremock container: %v", err.Error())
 	}
-
 	wiremockContainer.FollowOutput(&ContainerLogConsumer{name: "wiremock", logger: log.NewLogger()})
 	err = wiremockContainer.StartLogProducer(ctx)
 	if err != nil {
