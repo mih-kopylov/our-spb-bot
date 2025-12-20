@@ -19,7 +19,7 @@ func NewFirebaseStorage(conf *config.Config) (*firestore.Client, error) {
 		return nil, err
 	}
 
-	serviceAccountOption := option.WithCredentialsJSON(serviceAccountJson)
+	serviceAccountOption := option.WithAuthCredentialsJSON(option.ServiceAccount, serviceAccountJson)
 	ctx := context.Background()
 	app, err := firebase.NewApp(ctx, &fbConfig, serviceAccountOption)
 	if err != nil {
