@@ -2,7 +2,7 @@ module github.com/mih-kopylov/our-spb-bot
 
 go 1.24.0
 
-toolchain go1.24.10
+toolchain go1.24.11
 
 require (
 	cloud.google.com/go/firestore v1.20.0
